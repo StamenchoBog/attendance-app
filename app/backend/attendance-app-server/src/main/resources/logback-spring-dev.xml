@@ -1,0 +1,7 @@
+<configuration>
+    <springProfile name="dev">
+        <root level="DEBUG">
+            <appender-ref ref="STDOUT" />
+        </root>
+    </springProfile>
+</configuration>
