@@ -1,0 +1,20 @@
+# Server configuration
+spring:
+  application:
+    name: attendance-app-server
+  webflux:
+    base-path: /api
+
+  # Database configuration
+  r2dbc:
+    url: r2dbc:postgresql://localhost:54322/finki-services-db
+    username: finki_admin
+    password: f1nk1_@dm1n
+
+  liquibase:
+    change-log: liquibase/db.changelog-master.yaml
+
+# Logging
+logging:
+  pattern:
+    console: "%d{ISO8601} [%t] %-5level %logger{36} - %msg%n"

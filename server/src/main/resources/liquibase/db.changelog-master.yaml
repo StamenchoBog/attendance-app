@@ -1,0 +1,9 @@
+databaseChangeLog:
+  # Implement database improvements
+  #- include:
+  #    file: sql/001_database_improvements.sql
+  #    relativeToChangelogFile: true
+
+  #- include:
+  #    file: sql/002_test-data.sql
+  #    relativeToChangelogFile: true

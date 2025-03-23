@@ -1,0 +1,58 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.4.0'
+	id 'io.spring.dependency-management' version '1.1.6'
+	id 'org.graalvm.buildtools.native' version '0.10.3'
+}
+
+apply plugin: 'io.spring.dependency-management'
+
+group = 'mk.ukim.finki'
+version = '0.0.1-SNAPSHOT'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
+}
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	// Core Spring Boot
+	implementation 'org.springframework.boot:spring-boot-starter-webflux:3.4.3'
+	developmentOnly 'org.springframework.boot:spring-boot-devtools:3.4.3'
+	// Lombok (Compile-time only, and annotation processor)
+	compileOnly 'org.projectlombok:lombok:1.18.36'
+	annotationProcessor 'org.projectlombok:lombok:1.18.36'
+	// R2DBC (Reactive Database Connectivity)
+	implementation 'io.r2dbc:r2dbc-spi:1.0.0.RELEASE'
+	implementation 'org.springframework.data:spring-data-r2dbc:3.4.3'
+	implementation 'org.postgresql:r2dbc-postgresql:1.0.7.RELEASE'
+	implementation 'org.hibernate.reactive:hibernate-reactive-core:2.4.5.Final'
+	implementation 'org.liquibase:liquibase-core:4.31.0'
+	// Feature Dependencies
+	implementation 'com.google.zxing:javase:3.5.3'  // QR Code generation/reading
+	implementation 'org.mapstruct:mapstruct:1.6.3' // Mapping framework
+	annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.3' // MapStruct processor
+	// Logging
+	implementation 'org.slf4j:slf4j-api:2.0.17'
+	implementation 'ch.qos.logback:logback-classic:1.5.17'
+	implementation 'ch.qos.logback:logback-core:1.5.17'
+	// Testing
+	testImplementation 'org.springframework.boot:spring-boot-starter-test:3.4.3'
+	testImplementation 'io.projectreactor:reactor-test:3.7.3'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.12.0'
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
