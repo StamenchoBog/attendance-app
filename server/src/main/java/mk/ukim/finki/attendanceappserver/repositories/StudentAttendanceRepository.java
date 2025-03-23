@@ -13,15 +13,15 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Repository
-public interface StudentAttendanceRepository extends ReactiveCrudRepository<StudentAttendance, Long> {
+public interface StudentAttendanceRepository extends ReactiveCrudRepository<StudentAttendance, Integer> {
 
     @Query("""
-             SELECT sa.id as student_attendance_id, sa.student_student_index as student_index,
-               pcs.professor_id as professor_id, p.name as professor_name,
-               professor_class_session_id, scheduled_class_session_id, scs.course_id as course_id,
-               pcs.date as class_date, scs.type as class_type, scs.room_name as class_room_name,
-               scs.start_time as class_start_time, scs.end_time as class_end_time,
-               pcs.professor_arrival_time as professor_arrival_time, sa.arrival_time as student_arrival_time
+        SELECT sa.id as student_attendance_id, sa.student_student_index as student_index,
+                pcs.professor_id as professor_id, p.name as professor_name,
+                professor_class_session_id, scheduled_class_session_id, scs.course_id as course_id,
+                pcs.date as class_date, scs.type as class_type, scs.room_name as class_room_name,
+                scs.start_time as class_start_time, scs.end_time as class_end_time,
+                pcs.professor_arrival_time as professor_arrival_time, sa.arrival_time as student_arrival_time
         FROM student_attendance sa
         INNER JOIN professor_class_session pcs ON sa.professor_class_session_id = pcs.id
         INNER JOIN scheduled_class_session scs ON pcs.scheduled_class_session_id = scs.id
@@ -32,11 +32,11 @@ public interface StudentAttendanceRepository extends ReactiveCrudRepository<Stud
 
     @Query("""
         SELECT sa.id as student_attendance_id, sa.student_student_index as student_index,
-               pcs.professor_id as professor_id, p.name as professor_name,
-               professor_class_session_id, scheduled_class_session_id, scs.course_id as course_id,
-               pcs.date as class_date, scs.type as class_type, scs.room_name as class_room_name,
-               scs.start_time as class_start_time, scs.end_time as class_end_time,
-               pcs.professor_arrival_time as professor_arrival_time, sa.arrival_time as student_arrival_time
+                pcs.professor_id as professor_id, p.name as professor_name,
+                professor_class_session_id, scheduled_class_session_id, scs.course_id as course_id,
+                pcs.date as class_date, scs.type as class_type, scs.room_name as class_room_name,
+                scs.start_time as class_start_time, scs.end_time as class_end_time,
+                pcs.professor_arrival_time as professor_arrival_time, sa.arrival_time as student_arrival_time
         FROM student_attendance sa
         INNER JOIN professor_class_session pcs ON sa.professor_class_session_id = pcs.id
         INNER JOIN scheduled_class_session scs ON pcs.scheduled_class_session_id = scs.id

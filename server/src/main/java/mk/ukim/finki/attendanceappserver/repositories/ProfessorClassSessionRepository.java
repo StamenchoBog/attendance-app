@@ -12,7 +12,7 @@ import reactor.util.annotation.NonNull;
 import java.time.LocalDate;
 
 @Repository
-public interface ProfessorClassSessionRepository extends ReactiveCrudRepository<ProfessorClassSession, Long> {
+public interface ProfessorClassSessionRepository extends ReactiveCrudRepository<ProfessorClassSession, Integer> {
 
     Mono<ProfessorClassSession> getProfessorClassSessionsByScheduledClassSessionId(@NonNull int scheduledClassSessionId);
 
@@ -29,7 +29,7 @@ public interface ProfessorClassSessionRepository extends ReactiveCrudRepository<
 
     @Query("""
         SELECT pcs.id as professor_scheduled_class_session_id, scs.id as scheduled_class_session_id,
-               scs."type", scs.room_name, pcs.date, scs.start_time, scs.end_time
+                scs."type", scs.room_name, pcs.date, scs.start_time, scs.end_time
         FROM professor_class_session pcs
         JOIN scheduled_class_session scs ON pcs.scheduled_class_session_id = scs.id
         JOIN course c ON scs.course_id = c.id
@@ -42,7 +42,7 @@ public interface ProfessorClassSessionRepository extends ReactiveCrudRepository<
     //TODO: Try to use it or fix it
     @Query("""
         SELECT pcs.id as professor_scheduled_class_session_id, scs.id as scheduled_class_session_id,
-               scs."type", scs.room_name, pcs.date, scs.start_time, scs.end_time, scs.day_of_week
+                scs."type", scs.room_name, pcs.date, scs.start_time, scs.end_time, scs.day_of_week
         from professor_class_session pcs
         join scheduled_class_session scs on pcs.scheduled_class_session_id = scs.id
         join course c on scs.course_id = c.id
