@@ -29,9 +29,9 @@ The application supports linux/arm64 and linux/amd64  deployment. Follow these s
 Generate container image(s) using the following command:
 ```bash
 # For arm64 architecture
-docker buildx build --platform linux/arm64 --load -t attendance-app-server:latest .
+docker build --platform linux/arm64 --rm=true -t attendance-api-server:latest . 
 # For amd64 architecture
-docker buildx build --platform linux/amd64 --load -t attendance-app-server:latest .
+docker build --platform linux/amd64 --rm=true -t attendance-api-server:latest . 
 ```
 
 ### Container Deployment
@@ -39,7 +39,7 @@ docker buildx build --platform linux/amd64 --load -t attendance-app-server:lates
 To deploy and execute the containerized application:
 
 ```bash
-docker run -p 8080:8080 -d attendance-app-server:latest
+docker run -p 8080:8080 -d attendance-api-server:latest
 ```
 
 Note: The application is accessible at `http://localhost:8080`.

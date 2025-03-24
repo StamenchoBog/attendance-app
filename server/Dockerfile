@@ -6,26 +6,49 @@ COPY gradle gradle/
 COPY gradlew build.gradle settings.gradle ./
 RUN chmod +x ./gradlew
 
+# Cache Gradle dependencies
 RUN --mount=type=cache,target=/home/gradle/.gradle \
     ./gradlew dependencies --no-daemon
 
 COPY src src/
+
+# Build the application JAR
 RUN --mount=type=cache,target=/home/gradle/.gradle \
     ./gradlew bootJar --no-daemon
 
+# Create minimal JRE
+FROM eclipse-temurin:21-jdk-alpine AS jre-builder
+WORKDIR /opt
+USER root
+RUN jlink \
+    --module-path "$JAVA_HOME/jmods" \
+    --add-modules java.compiler,java.sql,java.naming,java.management,java.instrument,java.rmi,java.desktop,jdk.internal.vm.compiler.management,java.xml.crypto,java.scripting,java.security.jgss,jdk.httpserver,java.net.http,jdk.naming.dns,jdk.crypto.cryptoki,jdk.unsupported \
+    --verbose \
+    --strip-debug \
+    --compress 2 \
+    --no-header-files \
+    --no-man-pages \
+    --output /opt/jre-minimal
+
 # Runtime stage
-FROM eclipse-temurin:21-jre-alpine AS runtime
+FROM alpine:3.21 AS runtime
 WORKDIR /app
 
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
+# Copy built JAR and minimal JRE
 COPY --from=builder /app/build/libs/*.jar app.jar
-RUN chown appuser:appgroup /app \
-    && apk add --no-cache curl ping wget
+COPY --from=jre-builder /opt/jre-minimal /opt/jre-minimal
+
+ENV JAVA_HOME=/opt/jre-minimal
+ENV PATH="$PATH:$JAVA_HOME/bin"
+
+RUN chown appuser:appgroup /app
+
 USER appuser
 EXPOSE 8080
-HEALTHCHECK --interval=30s --timeout=3s \
-    CMD wget -q --spider http://localhost:8080/actuator/health || exit 1
 
 # JVM settings
 ENV JAVA_OPTS="-XX:MaxRAMPercentage=85.0 -XX:+UseContainerSupport -XX:+UseG1GC -Djava.security.egd=file:/dev/./urandom"
+
 ENTRYPOINT ["java", "-jar", "app.jar"]
