@@ -34,6 +34,16 @@ docker build --platform linux/arm64 --rm=true -t attendance-api-server:latest .
 docker build --platform linux/amd64 --rm=true -t attendance-api-server:latest . 
 ```
 
+The image is creating a minimal JRE image with the application jar file. To view all the dependencies to the JRE,
+we can run the following command:
+
+```bash
+# First build the .jar locally
+gradle bootJar
+# See the dependencies
+jdeps --list-deps --ignore-missing-deps build/libs/server-0.0.1.jar 
+```
+
 ### Container Deployment
 
 To deploy and execute the containerized application:

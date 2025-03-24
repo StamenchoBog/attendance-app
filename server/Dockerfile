@@ -22,7 +22,7 @@ WORKDIR /opt
 USER root
 RUN jlink \
     --module-path "$JAVA_HOME/jmods" \
-    --add-modules java.compiler,java.sql,java.naming,java.management,java.instrument,java.rmi,java.desktop,jdk.internal.vm.compiler.management,java.xml.crypto,java.scripting,java.security.jgss,jdk.httpserver,java.net.http,jdk.naming.dns,jdk.crypto.cryptoki,jdk.unsupported \
+     --add-modules java.compiler,java.logging,java.sql,java.rmi,java.naming,java.management,java.instrument,java.security.jgss,java.net.http,jdk.httpserver,jdk.naming.dns \
     --verbose \
     --strip-debug \
     --compress 2 \
