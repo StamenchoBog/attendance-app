@@ -22,10 +22,10 @@ WORKDIR /opt
 USER root
 RUN jlink \
     --module-path "$JAVA_HOME/jmods" \
-     --add-modules java.compiler,java.logging,java.sql,java.rmi,java.naming,java.management,java.instrument,java.security.jgss,java.net.http,jdk.httpserver,jdk.naming.dns \
+    --add-modules java.compiler,java.logging,java.sql,java.rmi,java.naming,java.management,java.instrument,java.security.jgss,java.net.http,jdk.httpserver,jdk.naming.dns,java.desktop \
     --verbose \
     --strip-debug \
-    --compress 2 \
+    --compress zip-6 \
     --no-header-files \
     --no-man-pages \
     --output /opt/jre-minimal

@@ -28,7 +28,9 @@ repositories {
 
 dependencies {
 	// Core Spring Boot
+	implementation 'org.springframework.boot:spring-boot-starter-parent:3.4.5'
 	implementation 'org.springframework.boot:spring-boot-starter-webflux:3.4.4'
+	implementation 'org.springframework.boot:spring-boot-starter-jdbc:3.4.4'
 	developmentOnly 'org.springframework.boot:spring-boot-devtools:3.4.4'
 	// Lombok (Compile-time only, and annotation processor)
 	compileOnly 'org.projectlombok:lombok:1.18.36'
@@ -37,10 +39,13 @@ dependencies {
 	implementation 'io.r2dbc:r2dbc-spi:1.0.0.RELEASE'
 	implementation 'org.springframework.data:spring-data-r2dbc:3.4.3'
 	implementation 'org.postgresql:r2dbc-postgresql:1.0.7.RELEASE'
+	implementation 'org.postgresql:postgresql:42.7.3'
 	implementation 'org.hibernate.reactive:hibernate-reactive-core:2.4.5.Final'
 	implementation 'org.liquibase:liquibase-core:4.31.0'
 	// Feature Dependencies
 	implementation 'com.google.zxing:javase:3.5.3'  // QR Code generation/reading
+	// Swagger documentation
+	implementation 'org.springdoc:springdoc-openapi-starter-webflux-ui:2.8.8'
 	// Logging
 	implementation 'org.slf4j:slf4j-api:2.0.17'
 	implementation 'ch.qos.logback:logback-classic:1.5.17'

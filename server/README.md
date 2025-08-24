@@ -27,6 +27,7 @@ To initiate the server with development profile configurations, execute:
 The application supports linux/arm64 and linux/amd64  deployment. Follow these steps to build the container image:
 
 Generate container image(s) using the following command:
+
 ```bash
 # For arm64 architecture
 docker build --platform linux/arm64 --rm=true -t attendance-api-server:latest . 
@@ -49,7 +50,11 @@ jdeps --list-deps --ignore-missing-deps build/libs/server-0.0.1.jar
 To deploy and execute the containerized application:
 
 ```bash
-docker run -p 8080:8080 -d attendance-api-server:latest
+# For development (local) booting
+docker compose up -d
+
+# For production settings
+docker run -p 8080:8080 -e SPRING_PROFILES_ACTIVE=prod attendance-api-server:latest
 ```
 
 Note: The application is accessible at `http://localhost:8080`.
