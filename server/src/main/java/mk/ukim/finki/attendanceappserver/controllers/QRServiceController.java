@@ -25,7 +25,7 @@ public class QRServiceController {
 
     @PostMapping("/generateQR")
     public Mono<ResponseEntity<byte[]>> generateQRCode(@RequestBody GenerateQRCodeRequestDTO dto) {
-        return Mono.fromCallable(() -> qrCodeGeneratorService.generateQRCode(dto))
+        return qrCodeGeneratorService.generateQRCode(dto)
                 .map(qrCodeBytes -> {
                     HttpHeaders headers = new HttpHeaders();
                     headers.setContentType(MediaType.IMAGE_PNG);

@@ -15,6 +15,9 @@ public class DateUtil {
     private static final WeekFields ISO_WEEK_FIELDS = WeekFields.ISO; // Pre-create for efficiency
     private static final DateTimeFormatter LOG_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
+    private static final String DATE_TIME_PATTERN = "yyyy-MM-dd HH:mm:ss.SSS";
+    public static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern(DATE_TIME_PATTERN);
+
     /**
      * Gets the current ISO week number.
      *

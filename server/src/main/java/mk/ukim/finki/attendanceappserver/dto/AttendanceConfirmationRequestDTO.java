@@ -8,7 +8,6 @@ import lombok.Data;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class AttendanceConfirmationRequestDTO {
 
-    private String studentId;
-    private String scheduledClassSessionId;
+    private int attendanceId;
     private String proximity;
 }

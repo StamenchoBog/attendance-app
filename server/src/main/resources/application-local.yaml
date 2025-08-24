@@ -7,12 +7,16 @@ spring:
 
   # Database configuration
   r2dbc:
-    url: r2dbc:postgresql://host.docker.internal:54322/finki-services-db
+    url: r2dbc:postgresql://localhost:54322/finki-services-db
     username: finki_admin
     password: f1nk1_@dm1n
 
   liquibase:
     change-log: liquibase/db.changelog-master.yaml
+    url: jdbc:postgresql://localhost:54322/finki-services-db
+    user: finki_admin
+    password: f1nk1_@dm1n
+    enabled: false
 
 # Swagger configuration
 springdoc:

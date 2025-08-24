@@ -10,12 +10,14 @@ import java.time.LocalTime;
 @Getter
 @Setter
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class CustomProfessorClassSession {
+public class ProfessorClassSession {
     private String professorClassSessionId;
     private String scheduledClassSessionId;
+    private String subjectId;
     private String type;
     private String roomName;
     private LocalDate date;
     private LocalTime startTime;
     private LocalTime endTime;
+    private String subjectName;
 }

@@ -1,82 +1,103 @@
 package mk.ukim.finki.attendanceappserver.services;
 
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import mk.ukim.finki.attendanceappserver.domain.enums.AttendanceStatus;
+import mk.ukim.finki.attendanceappserver.dto.AttendanceConfirmationRequestDTO;
 import mk.ukim.finki.attendanceappserver.dto.AttendanceRegistrationRequestDTO;
 import mk.ukim.finki.attendanceappserver.dto.db.CustomStudentAttendance;
+import mk.ukim.finki.attendanceappserver.repositories.ClassSessionRepository;
 import mk.ukim.finki.attendanceappserver.repositories.StudentAttendanceRepository;
-import mk.ukim.finki.attendanceappserver.repositories.StudentRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import mk.ukim.finki.attendanceappserver.repositories.models.StudentAttendance;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.annotation.NonNull;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
+@Slf4j
 @Service
 @AllArgsConstructor
 public class AttendanceService {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(AttendanceService.class);
-
     private final StudentAttendanceRepository studentAttendanceRepository;
+    private final ClassSessionRepository classSessionRepository;
     private final StudentService studentService;
 
     public Mono<CustomStudentAttendance> getStudentAttendanceById(@NonNull int studentAttendanceId) {
-        LOGGER.info("Retrieving student attendance with ID [{}]", studentAttendanceId);
+        log.info("Retrieving student attendance with ID [{}]", studentAttendanceId);
         return studentAttendanceRepository.getStudentAttendanceById(studentAttendanceId);
     }
 
     public Flux<CustomStudentAttendance> getStudentAttendancesByProfessorClassSessionId(@NonNull int professorClassSessionId) {
-        LOGGER.info("Retrieving all student attendance for professor class session with ID [{}] from database", professorClassSessionId);
+        log.info("Retrieving all student attendance for professor class session with ID [{}] from database", professorClassSessionId);
         return studentAttendanceRepository.getStudentAttendanceByProfessorClassSessionId(professorClassSessionId);
     }
 
     public Flux<CustomStudentAttendance> getStudentAttendancesForStudentIndexForPrevious30Days(@NonNull String studentIndex) {
         var currentDate = LocalDate.now();
         var previousDate = currentDate.minusDays(30);
-        LOGGER.info("Retrieving student attendance for student ID [{}] from date [{}] to date [{}]", studentIndex, previousDate, currentDate);
+        log.info("Retrieving student attendance for student ID [{}] from date [{}] to date [{}]", studentIndex, previousDate, currentDate);
         return studentAttendanceRepository.getStudentAttendanceByStudentIndexFromDateToDate(studentIndex, previousDate, currentDate);
     }
 
-    public Mono<String> registerAttendance(AttendanceRegistrationRequestDTO dto) {
-        LOGGER.info("Registering attendance for student with index [{}] for professor class session with ID [{}]",
-                dto.getStudentIndex(), dto.getProfessorClassSessionId());
+    public Mono<Integer> registerAttendance(AttendanceRegistrationRequestDTO dto) {
+        log.info("Registering attendance for student with index [{}] with token [{}].",
+                dto.getStudentIndex(), dto.getToken());
 
-        // Validation
-        var isUniqueAttendance = studentAttendanceRepository.existsStudentAttendanceByStudentIndexAndProfessorClassSessionId(
-                dto.getStudentIndex(),
-                dto.getProfessorClassSessionId());
-        var isStudentValid = studentService.isStudentValid(dto.getStudentIndex());
-
-        return isUniqueAttendance
-                .flatMap(isUnique -> {
-                    if (isUnique) {
-                        return Mono.error(new IllegalArgumentException("Attendance for already registered"));
-                    }
-                    return isStudentValid;
-                })
+        return studentService.isStudentValid(dto.getStudentIndex())
                 .flatMap(isValid -> {
                     if (!isValid) {
-                        return Mono.error(new IllegalArgumentException("Student with Index [" + dto.getStudentIndex()
-                                + "] is not valid or has no valid semester."));
+                        return Mono.error(new IllegalArgumentException("Student is not valid or not enrolled in the current semester."));
                     }
-                    studentAttendanceRepository.registerAttendance(dto.getStudentIndex(), dto.getProfessorClassSessionId(),
-                            dto.getRegistrationTime());
-                    return Mono.just("Attendance registered");
+                    return classSessionRepository.findByAttendanceToken(dto.getToken())
+                            .switchIfEmpty(Mono.error(new IllegalArgumentException("Invalid attendance token.")))
+                            .flatMap(session -> {
+                                if (session.getTokenExpirationTime().isBefore(LocalDateTime.now())) {
+                                    return Mono.error(new IllegalArgumentException("Attendance token has expired."));
+                                }
+
+                                return studentAttendanceRepository.existsStudentAttendanceByStudentIndexAndProfessorClassSessionId(
+                                        dto.getStudentIndex(), session.getId())
+                                        .flatMap(exists -> {
+                                            if (exists) {
+                                                return Mono.error(new IllegalArgumentException("Attendance already registered for this session."));
+                                            }
+
+                                            StudentAttendance newAttendance = StudentAttendance.builder()
+                                                    .studentIndex(dto.getStudentIndex())
+                                                    .professorClassSessionId(session.getId())
+                                                    .status(AttendanceStatus.PENDING_VERIFICATION)
+                                                    .arrivalTime(LocalDateTime.now())
+                                                    .build();
+
+                                            return studentAttendanceRepository.save(newAttendance)
+                                                    .map(StudentAttendance::getId);
+                                        });
+                            });
                 });
     }
 
-    // TODO: registerAttendance(AttendanceRegistrationRequest request):
-    //       Find the Student and Lecture (or equivalent identifiers).
-    //       Create a new Attendance record with a "pending" status.
-    //       Save the Attendance record.
+    public Mono<Void> confirmAttendance(AttendanceConfirmationRequestDTO dto) {
+        log.info("Confirming attendance for attendance record with ID [{}].", dto.getAttendanceId());
 
-    // TODO: confirmAttendance(AttendanceConfirmationRequest request):
-    //       Find the Attendance record by student and lecture (and status "pending").
-    //       Update the Attendance record with the "present" status and the provided rssi value.
-    //       Save the Attendance record.
+        return studentAttendanceRepository.findById(dto.getAttendanceId())
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Attendance record not found.")))
+                .flatMap(attendance -> {
+                    if (attendance.getStatus() != AttendanceStatus.PENDING_VERIFICATION) {
+                        return Mono.error(new IllegalStateException("Attendance is not pending verification."));
+                    }
 
-    // TODO: getAttendanceByLecture(String lectureId): Retrieves attendance records for a given lecture (or combined lecture identifiers). Return a list of DTOs, not entities.
+                    if ("NEAR".equals(dto.getProximity()) || "MEDIUM".equals(dto.getProximity())) {
+                        attendance.setStatus(AttendanceStatus.PRESENT);
+                    } else {
+                        attendance.setStatus(AttendanceStatus.ABSENT);
+                    }
+                    attendance.setProximity(dto.getProximity());
+                    return studentAttendanceRepository.save(attendance);
+                }).then();
+    }
+
 }

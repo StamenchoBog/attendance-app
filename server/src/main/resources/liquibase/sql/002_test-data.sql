@@ -2,8 +2,8 @@
 --changeset stamencho-bogdanovski:additional-test-data
 
 -- Data for table `semester`
-INSERT INTO semester (code, semester_type, 'year')
-VALUES ('2024-25-S', 'SUMMER', '2024-25')
+INSERT INTO semester (code, semester_type, year)
+VALUES ('2024-25-S', 'SUMMER', '2024-25'),
         ('2024-25-W', 'WINTER', '2024-25');
 
 -- Data for table `course`
@@ -89,16 +89,16 @@ VALUES
 INSERT INTO public.professor_class_session
 (id, professor_id, scheduled_class_session_id, date)
 VALUES
-    (1, 'igor.mishkovski', 1, '2025-03-11'),
-    (2, 'sasho.gramatikov', 2, '2025-03-11'),
-    (3, 'aleksandra.popovska', 3, '2025-03-11'),
-    (4, 'aleksandra.popovska', 4, '2025-03-11'),
-    (5, 'dimitar.kitanovski', 5, '2025-03-11'),
-    (6, 'vlatko.spasev', 6, '2025-03-11'),
-    (7, 'igor.mishkovski', 7, '2025-03-11'),
-    (8, 'sasho.gramatikov', 8, '2025-03-11'),
-    (9, 'milos.jovanovik', 9, '2025-03-12'),
-    (10, 'goran.velinov', 10, '2025-03-12');
+    (1, 'igor.mishkovski', 1, '2025-08-23'),
+    (2, 'sasho.gramatikov', 2, '2025-08-23'),
+    (3, 'aleksandra.popovska', 3, '2025-08-23'),
+    (4, 'aleksandra.popovska', 4, '2025-08-23'),
+    (5, 'dimitar.kitanovski', 5, '2025-08-23'),
+    (6, 'vlatko.spasev', 6, '2025-08-23'),
+    (7, 'igor.mishkovski', 7, '2025-08-23'),
+    (8, 'sasho.gramatikov', 8, '2025-08-23'),
+    (9, 'milos.jovanovik', 9, '2025-08-24'),
+    (10, 'goran.velinov', 10, '2025-08-24');
 
 -- Data for table `student_semester_enrollment`
 INSERT INTO public.student_semester_enrollment
@@ -204,47 +204,197 @@ VALUES
     -- Student '1732023' from KI class (professor_class_session_id = 9)
 
     -- Студенти кои посетуваат AOK (професор igor.mishkovski, professor_class_session_id = 1)
-    (1, '1612023', 1, '2025-03-11 09:02:00'),
-    (2, '1622023', 1, '2025-03-11 09:00:00'),
-    (3, '1702023', 1, '2025-03-11 09:01:00'),
-    (4, '1742023', 1, '2025-03-11 09:03:00'),
+    (1, '1612023', 1, '2025-08-23 09:02:00'),
+    (2, '1622023', 1, '2025-08-23 09:00:00'),
+    (3, '1702023', 1, '2025-08-23 09:01:00'),
+    (4, '1742023', 1, '2025-08-23 09:03:00'),
 
     -- Студенти кои посетуваат OS (професор sasho.gramatikov, professor_class_session_id = 2)
-    (5, '1612023', 2, '2025-03-11 10:00:00'),
-    (6, '1632023', 2, '2025-03-11 10:02:00'),
-    (7, '1702023', 2, '2025-03-11 10:01:00'),
+    (5, '1612023', 2, '2025-08-23 10:00:00'),
+    (6, '1632023', 2, '2025-08-23 10:02:00'),
+    (7, '1702023', 2, '2025-08-23 10:01:00'),
 
     -- Студенти кои посетуваат BS (професор aleksandra.popovska, professor_class_session_id = 3)
-    (8, '1622023', 3, '2025-03-11 11:00:00'),
-    (9, '1712023', 3, '2025-03-11 11:01:00'),
-    (10, '1752023', 3, '2025-03-11 11:02:00'),
+    (8, '1622023', 3, '2025-08-23 11:00:00'),
+    (9, '1712023', 3, '2025-08-23 11:01:00'),
+    (10, '1752023', 3, '2025-08-23 11:02:00'),
 
     -- Студенти кои посетуваат K2 (професор aleksandra.popovska, professor_class_session_id = 4)
-    (11, '1632023', 4, '2025-03-11 12:00:00'),
-    (12, '1642023', 4, '2025-03-11 12:01:00'),
-    (13, '1712023', 4, '2025-03-11 12:03:00'),
+    (11, '1632023', 4, '2025-08-23 12:00:00'),
+    (12, '1642023', 4, '2025-08-23 12:01:00'),
+    (13, '1712023', 4, '2025-08-23 12:03:00'),
 
     -- Студенти кои посетуваат ONVD (професор dimitar.kitanovski, professor_class_session_id = 5)
-    (14, '1642023', 5, '2025-03-11 13:00:00'),
-    (15, '1652023', 5, '2025-03-11 13:01:00'),
-    (16, '1722023', 5, '2025-03-11 13:02:00'),
+    (14, '1642023', 5, '2025-08-23 13:00:00'),
+    (15, '1652023', 5, '2025-08-23 13:01:00'),
+    (16, '1722023', 5, '2025-08-23 13:02:00'),
 
     -- Студенти кои посетуваат OOP (професор vlatko.spasev, professor_class_session_id = 6)
-    (17, '1652023', 6, '2025-03-11 14:00:00'),
-    (18, '1722023', 6, '2025-03-11 14:03:00'),
+    (17, '1652023', 6, '2025-08-23 14:00:00'),
+    (18, '1722023', 6, '2025-08-23 14:03:00'),
 
     -- Студенти кои посетуваат OS (професор igor.mishkovski, professor_class_session_id = 7)
-    (19, '1662023', 7, '2025-03-11 15:00:00'),
-    (20, '1732023', 7, '2025-03-11 15:01:00'),
+    (19, '1662023', 7, '2025-08-23 15:00:00'),
+    (20, '1732023', 7, '2025-08-23 15:01:00'),
 
     -- Студенти кои посетуваат OS (професор sasho.gramatikov, professor_class_session_id = 8)
-    (21, '1672023', 8, '2025-03-11 16:00:00'),
+    (21, '1672023', 8, '2025-08-23 16:00:00'),
 
     -- Студенти кои посетуваат KI (професор milos.jovanovik, professor_class_session_id = 9)
-    (22, '1672023', 9, '2025-03-12 09:00:00'),
-    (23, '1682023', 9, '2025-03-12 09:01:00'),
+    (22, '1672023', 9, '2025-08-24 09:00:00'),
+    (23, '1682023', 9, '2025-08-24 09:01:00'),
 
     -- Студенти кои посетуваат KNIO (професор goran.velinov, professor_class_session_id = 10)
-    (24, '1682023', 10, '2025-03-12 10:00:00'),
-    (25, '1692023', 10, '2025-03-12 10:01:00'),
-    (36, '1742023', 10, '2025-03-12 10:02:00');
+    (24, '1682023', 10, '2025-08-24 10:00:00'),
+    (25, '1692023', 10, '2025-08-24 10:01:00'),
+    (36, '1742023', 10, '2025-08-24 10:02:00');
+
+
+
+--changeset stamencho-bogdanovski:more-test-data-aug-sep-2025
+-- =====================================================================================================================
+-- Additional test data for August/September 2025
+-- =====================================================================================================================
+
+--
+-- More professor class sessions from 2025-08-25 to 2025-09-22
+--
+INSERT INTO public.professor_class_session
+(id, professor_id, scheduled_class_session_id, date)
+VALUES
+    -- Week 1: Mon, Aug 25
+    (11, 'igor.mishkovski', 1, '2025-08-25'),
+    (12, 'sasho.gramatikov', 2, '2025-08-25'),
+    (13, 'aleksandra.popovska', 3, '2025-08-25'),
+    (14, 'aleksandra.popovska', 4, '2025-08-25'),
+    (15, 'dimitar.kitanovski', 5, '2025-08-25'),
+    -- Tue, Aug 26
+    (16, 'milos.jovanovik', 9, '2025-08-26'),
+    (17, 'goran.velinov', 10, '2025-08-26'),
+
+    -- Week 2: Mon, Sep 1
+    (18, 'igor.mishkovski', 1, '2025-09-01'),
+    (19, 'sasho.gramatikov', 2, '2025-09-01'),
+    (20, 'aleksandra.popovska', 3, '2025-09-01'),
+    -- Tue, Sep 2
+    (21, 'milos.jovanovik', 9, '2025-09-02'),
+
+    -- Week 3: Mon, Sep 8
+    (22, 'igor.mishkovski', 1, '2025-09-08'),
+    (23, 'sasho.gramatikov', 2, '2025-09-08'),
+    (24, 'vlatko.spasev', 6, '2025-09-08'),
+    -- Tue, Sep 9
+    (25, 'goran.velinov', 10, '2025-09-09'),
+
+    -- Week 4: Mon, Sep 15
+    (26, 'igor.mishkovski', 1, '2025-09-15'),
+    (27, 'sasho.gramatikov', 2, '2025-09-15'),
+    -- Tue, Sep 16
+    (28, 'milos.jovanovik', 9, '2025-09-16'),
+
+    -- Week 5: Mon, Sep 22
+    (29, 'igor.mishkovski', 1, '2025-09-22'),
+    (30, 'sasho.gramatikov', 2, '2025-09-22');
+
+--
+-- More student attendance data for the new sessions
+--
+INSERT INTO public.student_attendance(id, student_student_index, professor_class_session_id, arrival_time)
+VALUES
+    -- Week 1 Attendance
+    -- Mon, Aug 25, AOK class (pcs_id = 11)
+    (37, '1612023', 11, '2025-08-25 09:01:00'), -- Student 1612023 attends AOK
+    (38, '1622023', 11, '2025-08-25 09:05:00'), -- Student 1622023 attends AOK (late)
+    -- Mon, Aug 25, OS class (pcs_id = 12)
+    (39, '1612023', 12, '2025-08-25 10:02:00'), -- Student 1612023 also attends OS
+    (40, '1632023', 12, '2025-08-25 10:00:00'),
+    -- Mon, Aug 25, BS class (pcs_id = 13)
+    (41, '1622023', 13, '2025-08-25 11:05:00'),
+    -- Tue, Aug 26, KNIO class (pcs_id = 17)
+    (42, '1682023', 17, '2025-08-26 10:01:00'),
+    (43, '1692023', 17, '2025-08-26 10:03:00'),
+
+    -- Week 2 Attendance (Sparse)
+    -- Mon, Sep 1, AOK class (pcs_id = 18)
+    (44, '1612023', 18, '2025-09-01 09:03:00'), -- Student 1612023 is consistently attending AOK
+    (45, '1692023', 18, '2025-09-01 09:04:00'),
+    -- Mon, Sep 1, OS class (pcs_id = 19)
+    (46, '1632023', 19, '2025-09-01 10:01:00'), -- Student 1632023 attends OS, but 1612023 doesn't this time
+
+    -- Week 3 Attendance
+    -- Mon, Sep 8, AOK class (pcs_id = 22)
+    (47, '1612023', 22, '2025-09-08 08:59:00'), -- On time!
+    (48, '1622023', 22, '2025-09-08 09:02:00'),
+    (49, '1702023', 22, '2025-09-08 09:05:00'),
+    -- Mon, Sep 8, OOP class (pcs_id = 24)
+    (50, '1652023', 24, '2025-09-08 14:01:00'),
+    (51, '1662023', 24, '2025-09-08 14:02:00'),
+
+    -- Week 4 Attendance (Student 1612023 misses AOK)
+    -- Mon, Sep 15, AOK class (pcs_id = 26)
+    (52, '1622023', 26, '2025-09-15 09:08:00'), -- Only student 1622023 attends, and is late
+
+    -- Week 5 Attendance
+    -- Mon, Sep 22, AOK class (pcs_id = 29)
+    (53, '1612023', 29, '2025-09-22 09:00:00'), -- Back to attending
+    (54, '1622023', 29, '2025-09-22 09:01:00'),
+    (55, '1692023', 29, '2025-09-22 09:02:00'),
+    (56, '1702023', 29, '2025-09-22 09:03:00'),
+    -- Mon, Sep 22, OS class (pcs_id = 30)
+    (57, '1612023', 30, '2025-09-22 10:05:00'),
+    (58, '1632023', 30, '2025-09-22 10:06:00'),
+    (59, '1702023', 30, '2025-09-22 10:07:00'),
+    (60, '1752023', 30, '2025-09-22 10:08:00');
+
+
+--changeset stamencho-bogdanovski:more-data-for-student-1612023
+-- =====================================================================================================================
+-- More specific attendance data for student 1612023 for mobile app testing
+-- =====================================================================================================================
+INSERT INTO public.student_attendance(id, student_student_index, professor_class_session_id, arrival_time)
+VALUES
+    -- Add attendance for student 1612023 to classes they previously "missed"
+    -- OS class on Sep 1 (pcs_id = 19)
+    (61, '1612023', 19, '2025-09-01 10:04:00'),
+    -- OS class on Sep 8 (pcs_id = 23)
+    (62, '1612023', 23, '2025-09-08 10:01:00'),
+    -- AOK class on Sep 15 (pcs_id = 26)
+    (63, '1612023', 26, '2025-09-15 09:05:00'),
+    -- OS class on Sep 15 (pcs_id = 27)
+    (64, '1612023', 27, '2025-09-15 10:03:00');
+
+
+--changeset stamencho-bogdanovski:add-todays-data-for-1612023-fix
+-- =====================================================================================================================
+-- Add today's attendance data for student 1612023 for mobile app testing
+-- =====================================================================================================================
+-- Enroll student 1612023 in KI
+INSERT INTO public.student_subject_enrollment(id, semester_code, student_student_index, subject_id, valid, joined_subject_abbreviation, professor_id, course_id)
+VALUES (31, '2024-25-S', '1612023', 'F23L3S118', true, 'KI', 'milos.jovanovik', 9);
+
+INSERT INTO public.student_attendance(id, student_student_index, professor_class_session_id, arrival_time)
+VALUES
+    -- Student 1612023 attending KI class on 2025-08-24 (pcs_id = 9)
+    (65, '1612023', 9, '2025-08-24 09:05:00');
+
+--changeset stamencho-bogdanovski:add-block-classes-for-testing
+-- =====================================================================================================================
+-- Add block classes for UI testing in the mobile app
+-- =====================================================================================================================
+-- Add a lecture and a practice session for KI on Monday
+INSERT INTO public.scheduled_class_session(id, course_id, room_name, type, start_time, end_time, day_of_week, semester_code)
+VALUES
+    (11, 9, 'Амф ТМФ', 'lecture', '10:00', '12:00', 1, '2024-25-S'),
+    (12, 9, 'Амф ТМФ', 'practice', '12:00', '13:45', 1, '2024-25-S');
+
+-- Create professor class sessions for these new scheduled sessions for tomorrow
+INSERT INTO public.professor_class_session(id, professor_id, scheduled_class_session_id, date)
+VALUES
+    (31, 'milos.jovanovik', 11, '2025-08-25'),
+    (32, 'milos.jovanovik', 12, '2025-08-25');
+
+-- Add attendance for student 1612023 for both sessions
+INSERT INTO public.student_attendance(id, student_student_index, professor_class_session_id, arrival_time)
+VALUES
+    (66, '1612023', 31, '2025-08-25 10:05:00'),
+    (67, '1612023', 32, '2025-08-25 12:05:00');

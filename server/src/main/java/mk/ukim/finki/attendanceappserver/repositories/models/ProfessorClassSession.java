@@ -31,4 +31,7 @@ public class ProfessorClassSession {
 
     @Column(name = "attendance_token")
     private String attendanceToken;
+
+    @Column(name = "token_expiration_time")
+    private LocalDateTime tokenExpirationTime;
 }

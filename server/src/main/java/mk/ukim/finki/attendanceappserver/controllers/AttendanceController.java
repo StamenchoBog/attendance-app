@@ -5,11 +5,11 @@ import mk.ukim.finki.attendanceappserver.dto.AttendanceConfirmationRequestDTO;
 import mk.ukim.finki.attendanceappserver.dto.AttendanceRegistrationRequestDTO;
 import mk.ukim.finki.attendanceappserver.dto.db.CustomStudentAttendance;
 import mk.ukim.finki.attendanceappserver.dto.generic.APIResponse;
+
 import mk.ukim.finki.attendanceappserver.services.AttendanceService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
@@ -21,32 +21,39 @@ public class AttendanceController {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AttendanceController.class);
 
-    private AttendanceService attendanceService;
+    private final AttendanceService attendanceService;
+
+    @PostMapping("/register")
+    public Mono<APIResponse<Integer>> registerAttendance(@RequestBody AttendanceRegistrationRequestDTO dto) {
+        LOGGER.info("Request for registering attendance for student with ID [{}].", dto.getStudentIndex());
+        return attendanceService.registerAttendance(dto)
+                .map(APIResponse::success)
+                .onErrorResume(e -> Mono.just(APIResponse.error(e.getMessage(), 400)));
+    }
+
+    @PostMapping("/confirm")
+    public Mono<APIResponse<Void>> confirmAttendance(@RequestBody AttendanceConfirmationRequestDTO dto) {
+        LOGGER.info("Request for confirming attendance for attendance ID [{}].", dto.getAttendanceId());
+        return attendanceService.confirmAttendance(dto)
+                .then(Mono.just(APIResponse.<Void>success(null)))
+                .onErrorResume(e -> Mono.just(APIResponse.<Void>error(e.getMessage(), 400)));
+    }
+
+    @GetMapping(value = "/lecture/{lectureId}")
+    public Mono<APIResponse<List<CustomStudentAttendance>>> getStudentAttendancesByLectureId(@PathVariable int lectureId) {
+        LOGGER.info("Request for retrieving all student attendance for lecture with ID [{}]",
+                lectureId);
+        return attendanceService.getStudentAttendancesByProfessorClassSessionId(lectureId)
+                .collectList()
+                .map(APIResponse::success)
+                .onErrorResume(e -> Mono.just(APIResponse.error(e.getMessage(), 500)));
+    }
 
     @GetMapping(value = "/{studentAttendanceId}")
     public Mono<APIResponse<CustomStudentAttendance>> getStudentAttendance(@PathVariable int studentAttendanceId) {
         LOGGER.info("Request for retrieving student attendance with ID [{}]",
                 studentAttendanceId);
         return attendanceService.getStudentAttendanceById(studentAttendanceId)
-                .map(APIResponse::success)
-                .onErrorResume(e -> Mono.just(APIResponse.error(e.getMessage(), 500)));
-    }
-
-    @GetMapping("/register")
-    public Mono<APIResponse<String>> registerAttendance(@RequestBody AttendanceRegistrationRequestDTO dto) {
-        LOGGER.info("Request for registering attendance for student with ID [{}] and professor class session with ID [{}].",
-                dto.getStudentIndex(), dto.getProfessorClassSessionId());
-        return attendanceService.registerAttendance(dto)
-                .map(APIResponse::success)
-                .onErrorResume(e -> Mono.just(APIResponse.error(e.getMessage(), 500)));
-    }
-
-    @GetMapping(value = "/by-professor-class-session-id/{professorClassSessionId}")
-    public Mono<APIResponse<List<CustomStudentAttendance>>> getStudentAttendancesByProfessorClassSessionID(@PathVariable int professorClassSessionId) {
-        LOGGER.info("Request for retrieving all student attendance for professor class session with ID [{}]",
-                professorClassSessionId);
-        return attendanceService.getStudentAttendancesByProfessorClassSessionId(professorClassSessionId)
-                .collectList()
                 .map(APIResponse::success)
                 .onErrorResume(e -> Mono.just(APIResponse.error(e.getMessage(), 500)));
     }
@@ -59,13 +66,4 @@ public class AttendanceController {
                 .map(APIResponse::success)
                 .onErrorResume(e -> Mono.just(APIResponse.error(e.getMessage(), 500)));
     }
-
-    // TODO: POST /attendance/confirm: Called by the mobile app after detecting the BLE beacon.
-    //       Input: Student ID, QR code data (or lecture ID), RSSI value, timestamp.
-    //       Output: Confirmation (e.g., a status code). This endpoint finalizes the attendance record.
-
-    // TODO: GET /attendance/lecture/{lectureId}: Retrieves attendance records for a lecture.
-    //       Input: Lecture ID.
-    //       Output: List of attendance records (student IDs, timestamps, etc.).
-
 }

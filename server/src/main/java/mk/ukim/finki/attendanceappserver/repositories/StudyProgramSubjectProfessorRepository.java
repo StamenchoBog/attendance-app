@@ -11,7 +11,7 @@ import reactor.core.publisher.Flux;
 @Repository
 public interface StudyProgramSubjectProfessorRepository extends ReactiveCrudRepository<StudyProgramSubjectProfessor, String> {
 
-    @Query("SELECT * " +
+    @Query("SELECT DISTINCT s.* " +
             "FROM subject s " +
             "INNER JOIN study_program_subject sps ON s.id = sps.subject_id " +
             "INNER JOIN study_program_subject_professor spsp ON sps.id = spsp.study_program_subject_id " +

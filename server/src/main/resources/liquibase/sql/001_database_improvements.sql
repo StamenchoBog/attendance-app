@@ -14,7 +14,7 @@ ALTER TABLE joined_subject ALTER COLUMN codes TYPE jsonb USING codes::jsonb::jso
 -- Each student can register only with one device to protect from being exploited.
 CREATE TABLE student_device (
     ID UUID PRIMARY KEY,
-    student_student_index UUID NOT NULL,
-    device_id UUID NOT NULL,
+    student_student_index VARCHAR(255) NOT NULL,
+    device_id VARCHAR(255) NOT NULL,
     FOREIGN KEY (student_student_index) REFERENCES student (student_index)
 );

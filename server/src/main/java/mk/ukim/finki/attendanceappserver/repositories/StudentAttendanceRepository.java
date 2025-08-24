@@ -10,19 +10,20 @@ import reactor.core.publisher.Mono;
 import reactor.util.annotation.NonNull;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 @Repository
 public interface StudentAttendanceRepository extends ReactiveCrudRepository<StudentAttendance, Integer> {
 
     @Query("""
         SELECT sa.id as student_attendance_id, sa.student_student_index as student_index,
+                s.name as student_name, s.study_program_code,
                 pcs.professor_id as professor_id, p.name as professor_name,
                 professor_class_session_id, scheduled_class_session_id, scs.course_id as course_id,
                 pcs.date as class_date, scs.type as class_type, scs.room_name as class_room_name,
                 scs.start_time as class_start_time, scs.end_time as class_end_time,
                 pcs.professor_arrival_time as professor_arrival_time, sa.arrival_time as student_arrival_time
         FROM student_attendance sa
+        INNER JOIN student s ON sa.student_student_index = s.student_index
         INNER JOIN professor_class_session pcs ON sa.professor_class_session_id = pcs.id
         INNER JOIN scheduled_class_session scs ON pcs.scheduled_class_session_id = scs.id
         INNER JOIN professor p ON pcs.professor_id = p.id
@@ -32,16 +33,18 @@ public interface StudentAttendanceRepository extends ReactiveCrudRepository<Stud
 
     @Query("""
         SELECT sa.id as student_attendance_id, sa.student_student_index as student_index,
+                s.name as student_name, s.study_program_code,
                 pcs.professor_id as professor_id, p.name as professor_name,
                 professor_class_session_id, scheduled_class_session_id, scs.course_id as course_id,
                 pcs.date as class_date, scs.type as class_type, scs.room_name as class_room_name,
                 scs.start_time as class_start_time, scs.end_time as class_end_time,
                 pcs.professor_arrival_time as professor_arrival_time, sa.arrival_time as student_arrival_time
         FROM student_attendance sa
+        INNER JOIN student s ON sa.student_student_index = s.student_index
         INNER JOIN professor_class_session pcs ON sa.professor_class_session_id = pcs.id
         INNER JOIN scheduled_class_session scs ON pcs.scheduled_class_session_id = scs.id
         INNER JOIN professor p ON pcs.professor_id = p.id
-        WHERE sa.professor_class_session_id = :professorClassSessionId
+        WHERE sa.professor_class_session_id = :professorClassSessionId AND sa.status = 'PRESENT'
     """)
     Flux<CustomStudentAttendance> getStudentAttendanceByProfessorClassSessionId(@NonNull int professorClassSessionId);
 
@@ -58,12 +61,6 @@ public interface StudentAttendanceRepository extends ReactiveCrudRepository<Stud
         WHERE sa.student_student_index = :studentIndex AND pcs.date BETWEEN :startDate AND :endDate
     """)
     Flux<CustomStudentAttendance> getStudentAttendanceByStudentIndexFromDateToDate(@NonNull String studentIndex, @NonNull LocalDate startDate, @NonNull LocalDate endDate);
-
-    @Query("""
-        INSERT INTO student_attendance (id, student_student_index, professor_class_session_id, arrival_time)
-        VALUES (DEFAULT, :studentIndex, :professorClassSessionId, :registrationTime)
-    """)
-    void registerAttendance(@NonNull String studentIndex, @NonNull int professorClassSessionId, @NonNull LocalDateTime registrationTime);
 
     Mono<Boolean> existsStudentAttendanceByStudentIndexAndProfessorClassSessionId(String studentIndex, int professorClassSessionId);
 }

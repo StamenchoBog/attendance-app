@@ -1,7 +1,11 @@
 package mk.ukim.finki.attendanceappserver.repositories.models;
 
-import jakarta.persistence.*;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import lombok.*;
+import mk.ukim.finki.attendanceappserver.domain.enums.AttendanceStatus;
+import org.springframework.data.annotation.Id;
+import jakarta.persistence.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
 import java.time.LocalDateTime;
@@ -23,4 +27,11 @@ public class StudentAttendance {
 
     @Column(name = "arrival_time")
     private LocalDateTime arrivalTime;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status")
+    private AttendanceStatus status;
+
+    @Column(name = "proximity")
+    private String proximity;
 }

@@ -1,0 +1,20 @@
+services:
+  # PostgreSQL database
+  database:
+    image: 'postgres:latest'
+    container_name: attendance-app-database
+    ports:
+      - 15432:5432
+    env_file:
+      - .env
+    networks:
+      - attendance-app-network
+    volumes:
+      - ~/docker_volumes/attendance-app/postgresql/db-data/:/var/lib/postgresql/data/
+      - ~/docker_volumes/attendance-app/postgresql/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  # Add Backend Server
+
+networks: 
+  attendance-app-network:
+    driver: bridge

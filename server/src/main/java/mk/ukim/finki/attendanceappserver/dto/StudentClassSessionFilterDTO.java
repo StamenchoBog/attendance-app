@@ -8,15 +8,9 @@ import lombok.Setter;
 @Setter
 @Getter
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class ClassSessionFilterDTO {
+public class StudentClassSessionFilterDTO {
 
     @NonNull
-    private String professorId;
-
-    private String subjectId;
-
-    private String date;
-
-    private String week;
-    private String month;
+    private String studentIndex;
+    private String dateTime;
 }
