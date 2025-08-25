@@ -40,7 +40,7 @@ dependencies {
 	implementation 'org.springframework.data:spring-data-r2dbc:3.4.3'
 	implementation 'org.postgresql:r2dbc-postgresql:1.0.7.RELEASE'
 	implementation 'org.postgresql:postgresql:42.7.3'
-	implementation 'org.hibernate.reactive:hibernate-reactive-core:2.4.5.Final'
+	implementation 'org.hibernate.reactive:hibernate-reactive-core:2.4.8.Final'
 	implementation 'org.liquibase:liquibase-core:4.31.0'
 	// Feature Dependencies
 	implementation 'com.google.zxing:javase:3.5.3'  // QR Code generation/reading
