@@ -48,8 +48,8 @@ dependencies {
 	implementation 'org.springdoc:springdoc-openapi-starter-webflux-ui:2.8.8'
 	// Logging
 	implementation 'org.slf4j:slf4j-api:2.0.17'
-	implementation 'ch.qos.logback:logback-classic:1.5.17'
-	implementation 'ch.qos.logback:logback-core:1.5.17'
+	implementation 'ch.qos.logback:logback-classic:1.5.18'
+	implementation 'ch.qos.logback:logback-core:1.5.18'
 	// Testing
 	testImplementation 'org.springframework.boot:spring-boot-starter-test:3.4.3'
 	testImplementation 'io.projectreactor:reactor-test:3.7.9'
