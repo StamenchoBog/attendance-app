@@ -7,28 +7,31 @@ import com.google.zxing.qrcode.QRCodeWriter;
 import lombok.AllArgsConstructor;
 import mk.ukim.finki.attendanceappserver.dto.GenerateQRCodeRequestDTO;
 import mk.ukim.finki.attendanceappserver.repositories.ClassSessionRepository;
+import mk.ukim.finki.attendanceappserver.repositories.StudentAttendanceRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
-import reactor.util.annotation.NonNull;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-@AllArgsConstructor
 @Service
+@AllArgsConstructor
 public class QRCodeGeneratorService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(QRCodeGeneratorService.class);
+
     private final ClassSessionRepository classSessionRepository;
+    private final StudentAttendanceRepository studentAttendanceRepository;
 
-    public Mono<byte[]> generateQRCode(@NonNull GenerateQRCodeRequestDTO dto) {
-        LOGGER.info("Generating QR code for professor class session with ID [{}].", dto.getProfessorClassSessionId());
+    public Mono<byte[]> generateQRCode(GenerateQRCodeRequestDTO dto) {
+        LOGGER.info("Generating QR code for professor class session with ID [{}]", dto.getProfessorClassSessionId());
 
-        return classSessionRepository.findById(dto.getProfessorClassSessionId())
+        return studentAttendanceRepository.resetAttendanceStatusForSession(dto.getProfessorClassSessionId())
+                .then(classSessionRepository.findById(dto.getProfessorClassSessionId()))
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("ProfessorClassSession not found")))
                 .flatMap(session -> {
                     String token = UUID.randomUUID().toString();

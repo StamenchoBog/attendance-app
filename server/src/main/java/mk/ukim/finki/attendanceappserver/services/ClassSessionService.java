@@ -27,8 +27,12 @@ public class ClassSessionService {
 
     public Flux<ProfessorClassSession> getProfessorClassSessionsByProfessorAndDate(@NonNull ProfessorClassSessionFilterDTO professorClassSessionFilterDTO) {
         LOGGER.info("Retrieving all professor class sessions for filter [{}]", professorClassSessionFilterDTO);
+        if (professorClassSessionFilterDTO.getDate() == null) {
+            return Flux.error(new IllegalArgumentException("Date cannot be null"));
+        }
+        LocalDate date = LocalDate.parse(professorClassSessionFilterDTO.getDate());
         return classSessionRepository.getClassSessionByProfessorForDate(professorClassSessionFilterDTO.getProfessorId(),
-                professorClassSessionFilterDTO.getDate());
+                date);
     }
 
     public Flux<ProfessorClassSession> getProfessorClassSessionsByProfessorIdForCurrentWeek(@NonNull String professorId) {

@@ -1,6 +1,5 @@
 package mk.ukim.finki.attendanceappserver.dto;
 
-
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 

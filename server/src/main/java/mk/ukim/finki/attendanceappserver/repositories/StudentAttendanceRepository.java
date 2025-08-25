@@ -63,4 +63,6 @@ public interface StudentAttendanceRepository extends ReactiveCrudRepository<Stud
     Flux<CustomStudentAttendance> getStudentAttendanceByStudentIndexFromDateToDate(@NonNull String studentIndex, @NonNull LocalDate startDate, @NonNull LocalDate endDate);
 
     Mono<Boolean> existsStudentAttendanceByStudentIndexAndProfessorClassSessionId(String studentIndex, int professorClassSessionId);
+    @Query("UPDATE student_attendance SET status = 'PENDING_VERIFICATION' WHERE professor_class_session_id = :professorClassSessionId")
+    Mono<Void> resetAttendanceStatusForSession(int professorClassSessionId);
 }

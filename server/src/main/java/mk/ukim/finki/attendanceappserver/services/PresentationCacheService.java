@@ -7,15 +7,15 @@ import java.util.Optional;
 @Service
 public class PresentationCacheService {
 
-    private final ConcurrentHashMap<String, Integer> cache = new ConcurrentHashMap<>();
+    // This cache now stores the generated QR code image bytes directly.
+    private final ConcurrentHashMap<String, byte[]> cache = new ConcurrentHashMap<>();
 
-    public void put(String key, Integer value) {
+    public void put(String key, byte[] value) {
         // In a production scenario, you would add an expiration policy here.
-        // For this implementation, the cache is ephemeral and will be cleared on restart.
         cache.put(key, value);
     }
 
-    public Optional<Integer> get(String key) {
+    public Optional<byte[]> get(String key) {
         return Optional.ofNullable(cache.get(key));
     }
 }
