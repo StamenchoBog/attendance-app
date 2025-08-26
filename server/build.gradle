@@ -60,7 +60,7 @@ dependencies {
 	// Testing
 	testImplementation 'org.springframework.boot:spring-boot-starter-test:3.4.3'
 	testImplementation 'io.projectreactor:reactor-test:3.7.9'
-	testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.12.0'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.13.4'
 }
 
 tasks.named('test') {
