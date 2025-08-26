@@ -31,7 +31,7 @@ RUN jlink \
     --output /opt/jre-minimal
 
 # Runtime stage
-FROM alpine:3.21 AS runtime
+FROM alpine:3.22 AS runtime
 WORKDIR /app
 
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
