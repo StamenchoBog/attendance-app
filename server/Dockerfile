@@ -1,5 +1,5 @@
 # Build stage
-FROM eclipse-temurin:21-jdk-alpine AS builder
+FROM eclipse-temurin:21.0.8_9-jdk-alpine AS builder
 WORKDIR /app
 
 COPY gradle gradle/
@@ -17,7 +17,7 @@ RUN --mount=type=cache,target=/home/gradle/.gradle \
     ./gradlew bootJar --no-daemon
 
 # Create minimal JRE
-FROM eclipse-temurin:21-jdk-alpine AS jre-builder
+FROM eclipse-temurin:21.0.8_9-jdk-alpine AS jre-builder
 WORKDIR /opt
 USER root
 RUN jlink \
