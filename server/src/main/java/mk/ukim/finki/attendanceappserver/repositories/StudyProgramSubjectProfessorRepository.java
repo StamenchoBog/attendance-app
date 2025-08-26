@@ -4,12 +4,12 @@ import lombok.NonNull;
 import mk.ukim.finki.attendanceappserver.repositories.models.StudyProgramSubjectProfessor;
 import mk.ukim.finki.attendanceappserver.repositories.models.Subject;
 import org.springframework.data.r2dbc.repository.Query;
-import org.springframework.data.repository.reactive.ReactiveCrudRepository;
+import org.springframework.data.r2dbc.repository.R2dbcRepository;
 import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Flux;
 
 @Repository
-public interface StudyProgramSubjectProfessorRepository extends ReactiveCrudRepository<StudyProgramSubjectProfessor, String> {
+public interface StudyProgramSubjectProfessorRepository extends R2dbcRepository<StudyProgramSubjectProfessor, String> {
 
     @Query("SELECT DISTINCT s.* " +
             "FROM subject s " +

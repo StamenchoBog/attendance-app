@@ -1,4 +1,5 @@
-import 'package:attendance_app/data/providers/dashboard_state_provider.dart';
+import 'package:attendance_app/data/providers/date_provider.dart';
+import 'package:attendance_app/data/providers/time_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'data/providers/user_provider.dart';
@@ -28,7 +29,8 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => UserProvider()),
-        ChangeNotifierProvider(create: (_) => DashboardStateProvider()),
+        ChangeNotifierProvider(create: (_) => DateProvider()),
+        ChangeNotifierProvider(create: (_) => TimeProvider()),
       ],
       child: const MyApp(),
     )

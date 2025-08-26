@@ -1,41 +1,38 @@
 package mk.ukim.finki.attendanceappserver.repositories.models;
 
-import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NonNull;
-import mk.ukim.finki.attendanceappserver.exceptions.entity.PreventAnyUpdate;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 
 @Data
-@Table(name = "study_program_subject")
-@EntityListeners(PreventAnyUpdate.class)
+@Table("study_program_subject")
 public class StudyProgramSubject {
 
     @Id
     @NonNull
-    @Column(name = "id")
+    @Column("id")
     private String id;
 
-    @OneToMany(fetch = FetchType.LAZY)
-    @Column(name = "subject_id")
-    private Subject subject;
+    @Column("subject_id")
+    private String subjectId;
 
-    @Column(name = "mandatory")
+    @Column("mandatory")
     private boolean mandatory;
 
-    @Column(name = "semester")
+    @Column("semester")
     private short semester;
 
-    @Column(name = "order")
+    @Column("order")
     private float order;
 
-    @OneToMany(fetch = FetchType.LAZY)
-    @Column(name = "study_program_code")
-    private StudyProgram studyProgram;
+    @Column("study_program_code")
+    private String studyProgramCode;
 
-    @Column(name = "dependencies_override", length = 5000)
+    @Column("dependencies_override")
     private String dependenciesOverride;
 
-    @Column(name = "subject_group")
+    @Column("subject_group")
     private String subjectGroup;
 }

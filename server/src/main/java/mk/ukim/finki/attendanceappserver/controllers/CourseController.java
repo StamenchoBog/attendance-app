@@ -26,16 +26,13 @@ public class CourseController {
         LOGGER.info("Request for retrieving all courses");
         return courseService.getCourses()
                 .collectList()
-                .map(APIResponse::success)
-                .onErrorResume(e -> Mono.just(APIResponse.error(e.getMessage(), 500)));
+                .map(APIResponse::success);
     }
 
     @GetMapping(value = "/{id}")
-    public Mono<ResponseEntity<APIResponse<Course>>> getCourse(@PathVariable Long id) {
+    public Mono<APIResponse<Course>> getCourse(@PathVariable Long id) {
         LOGGER.info("Request for retrieving course with id [{}]", id);
         return courseService.getCourse(id)
-                .map(course -> ResponseEntity.ok(APIResponse.success(course)))
-                .switchIfEmpty(Mono.just(ResponseEntity.notFound().build()))
-                .onErrorResume(e -> Mono.just(ResponseEntity.internalServerError().body(APIResponse.error(e.getMessage(), 500))));
+                .map(APIResponse::success);
     }
 }

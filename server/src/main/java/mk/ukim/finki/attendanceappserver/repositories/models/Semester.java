@@ -1,43 +1,40 @@
 package mk.ukim.finki.attendanceappserver.repositories.models;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.EntityListeners;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
 import lombok.NonNull;
-import mk.ukim.finki.attendanceappserver.exceptions.entity.PreventAnyUpdate;
+import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
 import java.time.LocalDate;
 
 @Data
-@Table(name = "semester")
-@EntityListeners(PreventAnyUpdate.class)
+@Table("semester")
 public class Semester {
 
     @Id
     @NonNull
-    @Column(name = "code")
+    @Column("code")
     private String code;
 
-    @Column(name = "semester_type")
+    @Column("semester_type")
     private String semesterType;
 
-    @Column(name = "year")
+    @Column("year")
     private String year;
 
-    @Column(name = "start_date")
+    @Column("start_date")
     private LocalDate startDate;
 
-    @Column(name = "end_date")
+    @Column("end_date")
     private LocalDate endDate;
 
-    @Column(name = "enrollment_start_date")
+    @Column("enrollment_start_date")
     private LocalDate enrollmentStartDate;
 
-    @Column(name = "enrollment_end_date")
+    @Column("enrollment_end_date")
     private LocalDate enrollmentEndDate;
 
-    @Column(name = "state")
+    @Column("state")
     private String state;
 }

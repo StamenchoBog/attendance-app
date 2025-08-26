@@ -1,64 +1,59 @@
 package mk.ukim.finki.attendanceappserver.repositories.models;
 
-import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NonNull;
-import mk.ukim.finki.attendanceappserver.exceptions.entity.PreventAnyUpdate;
-import mk.ukim.finki.attendanceappserver.repositories.models.converters.StringToSetConverter;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
 import java.util.Set;
 
 @Data
 @Table("course")
-@EntityListeners(PreventAnyUpdate.class)
 public class Course {
 
     @Id
     @NonNull
-    @Column(name = "id")
+    @Column("id")
     private Long id;
 
-    @Column(name = "study_year")
+    @Column("study_year")
     private short studyYear;
 
-    @Column(name = "last_name_regex")
+    @Column("last_name_regex")
     private String lastNameRegex;
 
-    @Column(name = "semester_code")
+    @Column("semester_code")
     private String semesterCode;
 
-    @Column(name = "joined_subject_abbreviation")
+    @Column("joined_subject_abbreviation")
     private String joinedSubjectAbbreviation;
 
-    @Column(name = "professor_id")
+    @Column("professor_id")
     private String professorId;
 
-    @Column(name = "assistant_id")
+    @Column("assistant_id")
     private String assistantId;
 
-    @Column(name = "number_of_first_enrollments")
+    @Column("number_of_first_enrollments")
     private int numberOfFirstEnrollments;
 
-    @Column(name = "number_of_re_enrollments")
+    @Column("number_of_re_enrollments")
     private int numberOfReEnrollments;
 
-    @Column(name = "group_portion")
+    @Column("group_portion")
     private float groupPortion;
 
-    @Column(name = "professors")
-    @Convert(converter = StringToSetConverter.class)
+    @Column("professors")
     private Set<String> professors;
 
-    @Column(name = "assistants")
-    @Convert(converter = StringToSetConverter.class)
+    @Column("assistants")
     private Set<String> assistants;
 
-    @Column(name = "groups")
+    @Column("groups")
     private String groups;
 
-    @Column(name = "english")
+    @Column("english")
     private boolean english;
 
 }

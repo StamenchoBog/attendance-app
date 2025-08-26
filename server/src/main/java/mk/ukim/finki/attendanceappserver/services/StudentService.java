@@ -46,11 +46,4 @@ public class StudentService {
     }
 
     //TODO: Fetch students which have enrolled on course with ID.
-    //public Flux<Student> getStudentsEnrolledOnSubjectWithId(String subjectId) {
-    //    LOGGER.info("Retrieving students which enrolled on subject with ID [{}].", subjectId);
-        //return validateEntityExists(subjectRepository, subjectId)
-        //        .thenMany(studentRepository.findStudentsBySubjectId(subjectId))
-        //        .switchIfEmpty(Flux.empty());
-
-    //}
 }

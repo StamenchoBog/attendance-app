@@ -1,15 +1,12 @@
 package mk.ukim.finki.attendanceappserver.repositories.models;
 
-import jakarta.persistence.EntityListeners;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
-import mk.ukim.finki.attendanceappserver.exceptions.entity.PreventAnyUpdate;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
 @Data
-@Table(name = "study_program")
-@EntityListeners(PreventAnyUpdate.class)
+@Table("study_program")
 public class StudyProgram {
 
     @Id

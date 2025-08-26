@@ -1,6 +1,6 @@
-// lib/presentation/widgets/profile_header_widget.dart
 import 'package:attendance_app/data/models/professor.dart';
 import 'package:attendance_app/data/models/student.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -19,6 +19,19 @@ class ProfileHeaderWidget extends StatelessWidget {
     this.name,
     this.imageUrl,
   });
+
+  String getInitials(String name) {
+    if (name.isEmpty) return '';
+    List<String> names = name.split(" ");
+    String initials = "";
+    int numWords = names.length > 2 ? 2 : names.length;
+    for (var i = 0; i < numWords; i++) {
+      if (names[i].isNotEmpty) {
+        initials += names[i][0];
+      }
+    }
+    return initials.toUpperCase();
+  }
 
 @override
   Widget build(BuildContext context) {
@@ -39,6 +52,8 @@ class ProfileHeaderWidget extends StatelessWidget {
                     : 'User'))
             : id ?? '';
         
+        final initials = getInitials(displayName);
+
         return Center(
           child: Column(
             children: [
@@ -47,17 +62,29 @@ class ProfileHeaderWidget extends StatelessWidget {
                 radius: 55.r,
                 backgroundColor: ColorPalette.lightestBlue,
                 child: imageUrl == null || imageUrl!.isEmpty
-                    ? Icon(
-                        CupertinoIcons.person_fill,
-                        size: 60.sp,
-                        color: ColorPalette.darkBlue.withValues(alpha: 0.8),
+                    ? Text(
+                        initials,
+                        style: TextStyle(
+                          fontSize: 40.sp,
+                          fontWeight: FontWeight.bold,
+                          color: ColorPalette.darkBlue.withOpacity(0.8),
+                        ),
                       )
                     : ClipOval(
-                        child: Image.network(
-                          imageUrl!,
+                        child: CachedNetworkImage(
+                          imageUrl: imageUrl!,
                           fit: BoxFit.cover,
                           width: 110.r,
                           height: 110.r,
+                          placeholder: (context, url) => const CircularProgressIndicator(),
+                          errorWidget: (context, url, error) => Text(
+                            initials,
+                            style: TextStyle(
+                              fontSize: 40.sp,
+                              fontWeight: FontWeight.bold,
+                              color: ColorPalette.darkBlue.withOpacity(0.8),
+                            ),
+                          ),
                         ),
                       ),
               ),

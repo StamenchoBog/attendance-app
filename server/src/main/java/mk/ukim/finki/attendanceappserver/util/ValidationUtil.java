@@ -19,20 +19,15 @@ public class ValidationUtil {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ValidationUtil.class);
 
-    public static <T> void validate(T request, String... fields) {
+    public static <T> void validate(T request, String... fields) throws NoSuchFieldException, IllegalAccessException {
         List<String> missingFields = new ArrayList<>();
 
         for (String field : fields) {
-            try {
-                java.lang.reflect.Field declaredField = request.getClass().getDeclaredField(field);
-                Object fieldValue = declaredField.get(request);
+            java.lang.reflect.Field declaredField = request.getClass().getDeclaredField(field);
+            Object fieldValue = declaredField.get(request);
 
-                if (fieldValue == null || (fieldValue instanceof String && ObjectUtils.isEmpty(fieldValue))) {
-                    missingFields.add(field);
-                }
-            } catch (NoSuchFieldException | IllegalAccessException e) {
-                LOGGER.error("Error during validation: {}", e.getMessage(), e);
-                throw new RuntimeException("Error during validation: " + e.getMessage()); // Or a more specific exception
+            if (fieldValue == null || (fieldValue instanceof String && ObjectUtils.isEmpty(fieldValue))) {
+                missingFields.add(field);
             }
         }
 

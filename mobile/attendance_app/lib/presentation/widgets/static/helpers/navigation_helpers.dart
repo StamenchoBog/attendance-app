@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:attendance_app/data/providers/user_provider.dart';
 import 'package:attendance_app/data/services/api/api_roles.dart';
 import 'package:attendance_app/presentation/screens/student_dashboard.dart';
-import 'package:attendance_app/presentation/screens/calendar_overview.dart';
+import 'package:attendance_app/presentation/screens/student_calendar_overview.dart';
 import 'package:attendance_app/presentation/screens/verify_attendance.dart';
 import 'package:attendance_app/presentation/screens/profile_overview.dart';
 import 'package:attendance_app/presentation/screens/settings/language_setting.dart';

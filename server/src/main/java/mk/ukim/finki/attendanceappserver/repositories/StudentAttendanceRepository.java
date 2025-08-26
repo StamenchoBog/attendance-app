@@ -3,7 +3,7 @@ package mk.ukim.finki.attendanceappserver.repositories;
 import mk.ukim.finki.attendanceappserver.dto.db.CustomStudentAttendance;
 import mk.ukim.finki.attendanceappserver.repositories.models.StudentAttendance;
 import org.springframework.data.r2dbc.repository.Query;
-import org.springframework.data.repository.reactive.ReactiveCrudRepository;
+import org.springframework.data.r2dbc.repository.R2dbcRepository;
 import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -12,7 +12,7 @@ import reactor.util.annotation.NonNull;
 import java.time.LocalDate;
 
 @Repository
-public interface StudentAttendanceRepository extends ReactiveCrudRepository<StudentAttendance, Integer> {
+public interface StudentAttendanceRepository extends R2dbcRepository<StudentAttendance, Integer> {
 
     @Query("""
         SELECT sa.id as student_attendance_id, sa.student_student_index as student_index,
@@ -65,4 +65,21 @@ public interface StudentAttendanceRepository extends ReactiveCrudRepository<Stud
     Mono<Boolean> existsStudentAttendanceByStudentIndexAndProfessorClassSessionId(String studentIndex, int professorClassSessionId);
     @Query("UPDATE student_attendance SET status = 'PENDING_VERIFICATION' WHERE professor_class_session_id = :professorClassSessionId")
     Mono<Void> resetAttendanceStatusForSession(int professorClassSessionId);
+
+    @Query("""
+        SELECT
+            COUNT(*) AS total_classes,
+            SUM(CASE WHEN sa.status = 'PRESENT' THEN 1 ELSE 0 END) AS attended_classes
+        FROM student_attendance sa
+        JOIN professor_class_session pcs ON sa.professor_class_session_id = pcs.id
+        JOIN scheduled_class_session scs ON pcs.scheduled_class_session_id = scs.id
+        WHERE sa.student_student_index = :studentIndex
+        AND scs.semester_code = :semester
+    """)
+    Mono<AttendanceSummary> findAttendanceSummaryByStudentIndexAndSemester(String studentIndex, String semester);
+
+    interface AttendanceSummary {
+        Integer getTotal_classes();
+        Integer getAttended_classes();
+    }
 }

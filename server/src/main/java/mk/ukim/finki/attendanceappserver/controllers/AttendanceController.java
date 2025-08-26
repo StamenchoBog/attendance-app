@@ -27,16 +27,14 @@ public class AttendanceController {
     public Mono<APIResponse<Integer>> registerAttendance(@RequestBody AttendanceRegistrationRequestDTO dto) {
         LOGGER.info("Request for registering attendance for student with ID [{}].", dto.getStudentIndex());
         return attendanceService.registerAttendance(dto)
-                .map(APIResponse::success)
-                .onErrorResume(e -> Mono.just(APIResponse.error(e.getMessage(), 400)));
+                .map(APIResponse::success);
     }
 
     @PostMapping("/confirm")
     public Mono<APIResponse<Void>> confirmAttendance(@RequestBody AttendanceConfirmationRequestDTO dto) {
         LOGGER.info("Request for confirming attendance for attendance ID [{}].", dto.getAttendanceId());
         return attendanceService.confirmAttendance(dto)
-                .then(Mono.just(APIResponse.<Void>success(null)))
-                .onErrorResume(e -> Mono.just(APIResponse.<Void>error(e.getMessage(), 400)));
+                .then(Mono.just(APIResponse.<Void>success(null)));
     }
 
     @GetMapping(value = "/lecture/{lectureId}")
@@ -45,8 +43,7 @@ public class AttendanceController {
                 lectureId);
         return attendanceService.getStudentAttendancesByProfessorClassSessionId(lectureId)
                 .collectList()
-                .map(APIResponse::success)
-                .onErrorResume(e -> Mono.just(APIResponse.error(e.getMessage(), 500)));
+                .map(APIResponse::success);
     }
 
     @GetMapping(value = "/{studentAttendanceId}")
@@ -54,8 +51,7 @@ public class AttendanceController {
         LOGGER.info("Request for retrieving student attendance with ID [{}]",
                 studentAttendanceId);
         return attendanceService.getStudentAttendanceById(studentAttendanceId)
-                .map(APIResponse::success)
-                .onErrorResume(e -> Mono.just(APIResponse.error(e.getMessage(), 500)));
+                .map(APIResponse::success);
     }
 
     @GetMapping("/by-student/{studentIndex}/previous-30-days")
@@ -63,7 +59,6 @@ public class AttendanceController {
         LOGGER.info("Request for retrieving student attendance for student index [{}] for the previous 30 days.", studentIndex);
         return attendanceService.getStudentAttendancesForStudentIndexForPrevious30Days(studentIndex)
                 .collectList()
-                .map(APIResponse::success)
-                .onErrorResume(e -> Mono.just(APIResponse.error(e.getMessage(), 500)));
+                .map(APIResponse::success);
     }
 }

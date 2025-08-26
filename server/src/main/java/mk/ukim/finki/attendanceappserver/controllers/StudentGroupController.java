@@ -6,7 +6,6 @@ import mk.ukim.finki.attendanceappserver.repositories.models.StudentGroup;
 import mk.ukim.finki.attendanceappserver.services.StudentGroupService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -29,25 +28,20 @@ public class StudentGroupController {
         LOGGER.info("Request for retrieving all student groups");
         return studentGroupService.getAllStudentGroups()
                 .collectList()
-                .map(APIResponse::success)
-                .onErrorResume(e -> Mono.just(APIResponse.error(e.getMessage(), 500)));
+                .map(APIResponse::success);
     }
 
     @GetMapping(value = "/{id}")
-    public Mono<ResponseEntity<APIResponse<StudentGroup>>> getStudentGroupById(@PathVariable Long id) {
+    public Mono<APIResponse<StudentGroup>> getStudentGroupById(@PathVariable Long id) {
         LOGGER.info("Request for retrieving student group with ID [{}]", id);
         return studentGroupService.getStudentGroupById(id)
-                .map(studentGroup -> ResponseEntity.ok(APIResponse.success(studentGroup)))
-                .switchIfEmpty(Mono.just(ResponseEntity.notFound().build()))
-                .onErrorResume(e -> Mono.just(ResponseEntity.internalServerError().body(APIResponse.error(e.getMessage(), 500))));
+                .map(APIResponse::success);
     }
 
     @GetMapping(value = "/name/{name}")
-    public Mono<ResponseEntity<APIResponse<StudentGroup>>> getStudentGroupByName(@PathVariable String name) {
+    public Mono<APIResponse<StudentGroup>> getStudentGroupByName(@PathVariable String name) {
         LOGGER.info("Request for retrieving student group with name [{}]", name);
         return studentGroupService.getStudentGroupByName(name)
-                .map(studentGroup -> ResponseEntity.ok(APIResponse.success(studentGroup)))
-                .switchIfEmpty(Mono.just(ResponseEntity.notFound().build()))
-                .onErrorResume(e -> Mono.just(ResponseEntity.internalServerError().body(APIResponse.error(e.getMessage(), 500))));
+                .map(APIResponse::success);
     }
 }

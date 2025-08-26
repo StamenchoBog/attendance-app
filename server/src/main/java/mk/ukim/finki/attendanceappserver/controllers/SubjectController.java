@@ -6,7 +6,6 @@ import mk.ukim.finki.attendanceappserver.repositories.models.Subject;
 import mk.ukim.finki.attendanceappserver.services.SubjectService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -29,17 +28,14 @@ public class SubjectController {
         LOGGER.info("Request for retrieving all subjects");
         return subjectService.getSubjects()
                 .collectList()
-                .map(APIResponse::success)
-                .onErrorResume(e -> Mono.just(APIResponse.error(e.getMessage(), 500)));
+                .map(APIResponse::success);
     }
 
     @GetMapping(value = "/{id}")
-    public Mono<ResponseEntity<APIResponse<Subject>>> getSubject(@PathVariable String id) {
+    public Mono<APIResponse<Subject>> getSubject(@PathVariable String id) {
         LOGGER.info("Request for retrieving subject with id [{}]", id);
         return subjectService.getSubjectById(id)
-                .map(subject -> ResponseEntity.ok(APIResponse.success(subject)))
-                .switchIfEmpty(Mono.just(ResponseEntity.notFound().build()))
-                .onErrorResume(e -> Mono.just(ResponseEntity.internalServerError().body(APIResponse.error(e.getMessage(), 500))));
+                .map(APIResponse::success);
     }
 
     @GetMapping(value = "/by-professor/{professorId}")
@@ -47,8 +43,7 @@ public class SubjectController {
         LOGGER.info("Request for retrieving all subjects associated with professor id [{}]", professorId);
         return subjectService.getSubjectsByProfessorId(professorId)
                 .collectList()
-                .map(APIResponse::success)
-                .onErrorResume(e -> Mono.just(APIResponse.error(e.getMessage(), 500)));
+                .map(APIResponse::success);
     }
 
     // TODO: Get lectures about a subject.

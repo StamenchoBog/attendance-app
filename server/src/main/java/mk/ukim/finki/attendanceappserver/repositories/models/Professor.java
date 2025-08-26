@@ -1,35 +1,34 @@
 package mk.ukim.finki.attendanceappserver.repositories.models;
 
-import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NonNull;
-import mk.ukim.finki.attendanceappserver.exceptions.entity.PreventAnyUpdate;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 
 @Data
-@Table(name = "professor")
-@EntityListeners(PreventAnyUpdate.class)
+@Table("professor")
 public class Professor {
 
     @Id
     @NonNull
-    @Column(name = "id")
+    @Column("id")
     private String id;
 
     @NonNull
-    @Column(name = "email", unique = true)
+    @Column("email")
     private String email;
 
     @NonNull
-    @Column(name = "name")
+    @Column("name")
     private String name;
 
-    @Column(name = "title")
+    @Column("title")
     private String title;
 
-    @Column(name = "ordering_rank")
+    @Column("ordering_rank")
     private int orderingRank;
 
-    @Column(name = "office_name")
+    @Column("office_name")
     private String officeName;
 }

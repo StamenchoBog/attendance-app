@@ -1,15 +1,21 @@
-import 'dart:io' show Platform;
-import 'package:attendance_app/core/utils/storage_keys.dart';
+import 'dart:io';
+
+import 'package:attendance_app/data/services/api/api_client.dart';
+import 'package:attendance_app/data/services/api/api_endpoints.dart';
+import 'package:attendance_app/data/services/service_starter.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:uuid/uuid.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:logger/logger.dart';
+
+import '../utils/storage_keys.dart';
 
 class DeviceIdentifierService {
   static final DeviceInfoPlugin _deviceInfoPlugin = DeviceInfoPlugin();
   static const _secureStorage = FlutterSecureStorage();
   static final _uuidGenerator = Uuid();
   final Logger _logger = Logger();
+  final ApiClient _apiClient = locator<ApiClient>();
 
   /// Retrieves the platform-specific device identifier.
   /// - For Android, returns Settings.Secure.ANDROID_ID.
@@ -118,5 +124,56 @@ class DeviceIdentifierService {
       return null;
     }
     return 'Unknown OS'; // Fallback
+  }
+  
+  Future<Map<String, String?>> getRegisteredDevice(String? studentIndex) async {
+    try {
+      final response = await _apiClient.get(
+          '${ApiEndpoints.students}/$studentIndex/registered-device'
+      );
+      final Map<String, String> data = response['data'];
+      _logger.i('Successfully fetched registered device for student $studentIndex.');
+      return {
+        'id': data['device_id'],
+        'name': data['device_name'],
+        'os': data['device_os'],
+      };
+    } on ApiException catch (e) {
+      _logger.e('API Error on device link request: ${e.message}');
+      throw Exception('Failed to submit request: ${e.message}');
+    } catch (e) {
+      _logger.e('Unknown error on device link request: $e');
+      throw Exception('An unexpected error occurred. Please try again.');
+    }
+  }
+
+  Future<void> requestDeviceLink(String studentIndex) async {
+    final deviceId = await getPlatformSpecificIdentifier();
+    final deviceName = await getDeviceName();
+    final deviceOs = await getOsVersion();
+
+    if (deviceId == null) {
+      throw Exception('Could not get device identifier.');
+    }
+
+    final requestBody = {
+      'deviceId': deviceId,
+      'deviceName': deviceName,
+      'deviceOs': deviceOs,
+    };
+
+    try {
+      await _apiClient.post(
+        '${ApiEndpoints.students}/$studentIndex/device-link-request',
+        requestBody,
+      );
+      _logger.i('Successfully sent device link request for student $studentIndex.');
+    } on ApiException catch (e) {
+      _logger.e('API Error on device link request: ${e.message}');
+      throw Exception('Failed to submit request: ${e.message}');
+    } catch (e) {
+      _logger.e('Unknown error on device link request: $e');
+      throw Exception('An unexpected error occurred. Please try again.');
+    }
   }
 }

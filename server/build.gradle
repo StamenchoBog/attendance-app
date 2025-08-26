@@ -50,6 +50,11 @@ dependencies {
 	implementation 'org.slf4j:slf4j-api:2.0.17'
 	implementation 'ch.qos.logback:logback-classic:1.5.17'
 	implementation 'ch.qos.logback:logback-core:1.5.17'
+	// Caching
+	implementation 'org.springframework.boot:spring-boot-starter-cache'
+	implementation 'com.github.ben-manes.caffeine:caffeine'
+	// Mail Sender
+	implementation 'org.springframework.boot:spring-boot-starter-mail'
 	// Testing
 	testImplementation 'org.springframework.boot:spring-boot-starter-test:3.4.3'
 	testImplementation 'io.projectreactor:reactor-test:3.7.3'

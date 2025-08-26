@@ -1,19 +1,16 @@
 package mk.ukim.finki.attendanceappserver.repositories.models;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.EntityListeners;
-import jakarta.persistence.Table;
 import lombok.Data;
-import mk.ukim.finki.attendanceappserver.exceptions.entity.PreventAnyUpdate;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 
 @Data
-@Table(name = "subject_exam_rooms")
-@EntityListeners(PreventAnyUpdate.class)
+@Table("subject_exam_rooms")
 public class SubjectExamRooms {
 
-    @Column(name = "subject_exam_id")
+    @Column("subject_exam_id")
     private String subjectExamId;
 
-    @Column(name = "rooms_name")
+    @Column("rooms_name")
     private String roomsName;
 }

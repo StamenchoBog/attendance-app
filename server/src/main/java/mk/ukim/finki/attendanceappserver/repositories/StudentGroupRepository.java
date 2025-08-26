@@ -1,12 +1,12 @@
 package mk.ukim.finki.attendanceappserver.repositories;
 
 import mk.ukim.finki.attendanceappserver.repositories.models.StudentGroup;
-import org.springframework.data.repository.reactive.ReactiveCrudRepository;
+import org.springframework.data.r2dbc.repository.R2dbcRepository;
 import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Mono;
 import reactor.util.annotation.NonNull;
 
 @Repository
-public interface StudentGroupRepository extends ReactiveCrudRepository<StudentGroup, Long> {
+public interface StudentGroupRepository extends R2dbcRepository<StudentGroup, Long> {
     Mono<StudentGroup> findByName(@NonNull String name);
 }

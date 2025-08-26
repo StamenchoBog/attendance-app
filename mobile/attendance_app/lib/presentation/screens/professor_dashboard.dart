@@ -1,4 +1,4 @@
-import 'package:attendance_app/data/providers/dashboard_state_provider.dart';
+import 'package:attendance_app/data/providers/date_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -37,12 +37,13 @@ class _ProfessorDashboardState extends State<ProfessorDashboard> {
   final SubjectRepository _subjectRepository = locator<SubjectRepository>();
   final RoomRepository _roomRepository = locator<RoomRepository>();
 
-  DashboardStateProvider? _dashboardStateProvider;
+  DateProvider? _dateProvider;
   List<dynamic> _allClasses = [];
   List<dynamic> _filteredClasses = [];
   bool _isLoading = true;
   String? _errorMessage;
 
+  String _searchQuery = '';
   List<Subject> _subjects = [];
   List<Room> _rooms = [];
   Subject? _selectedSubject;
@@ -51,11 +52,11 @@ class _ProfessorDashboardState extends State<ProfessorDashboard> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final provider = Provider.of<DashboardStateProvider>(context);
-    if (provider != _dashboardStateProvider) {
-      _dashboardStateProvider?.removeListener(_loadInitialData);
-      _dashboardStateProvider = provider;
-      _dashboardStateProvider?.addListener(_loadInitialData);
+    final provider = Provider.of<DateProvider>(context);
+    if (provider != _dateProvider) {
+      _dateProvider?.removeListener(_loadInitialData);
+      _dateProvider = provider;
+      _dateProvider?.addListener(_loadInitialData);
       // Initial load
       _loadInitialData();
     }
@@ -63,7 +64,7 @@ class _ProfessorDashboardState extends State<ProfessorDashboard> {
 
   @override
   void dispose() {
-    _dashboardStateProvider?.removeListener(_loadInitialData);
+    _dateProvider?.removeListener(_loadInitialData);
     super.dispose();
   }
 
@@ -81,7 +82,7 @@ class _ProfessorDashboardState extends State<ProfessorDashboard> {
       }
       final subjects = await _subjectRepository.getSubjectsByProfessorId(user.id);
       final rooms = await _roomRepository.getRooms();
-      final classes = await _classSessionRepository.getProfessorClassSessions(user.id, _dashboardStateProvider!.selectedDate);
+      final classes = await _classSessionRepository.getProfessorClassSessions(user.id, _dateProvider!.selectedDate);
       
       if (!mounted) return;
       setState(() {
@@ -90,6 +91,7 @@ class _ProfessorDashboardState extends State<ProfessorDashboard> {
         _allClasses = classes;
         _filteredClasses = classes;
         _isLoading = false;
+        _filterClasses();
       });
     } catch (e) {
       if (!mounted) return;
@@ -104,12 +106,23 @@ class _ProfessorDashboardState extends State<ProfessorDashboard> {
   void _filterClasses() {
     List<dynamic> filtered = _allClasses;
 
+    // Filter by dropdowns first
     if (_selectedSubject != null) {
       filtered = filtered.where((c) => c['subjectId'] == _selectedSubject!.id).toList();
     }
 
     if (_selectedRoom != null) {
       filtered = filtered.where((c) => c['roomName'] == _selectedRoom!.name).toList();
+    }
+
+    // Then filter by search query
+    if (_searchQuery.isNotEmpty) {
+      final lowerCaseQuery = _searchQuery.toLowerCase();
+      filtered = filtered.where((classData) {
+        final subjectName = (classData['subjectName'] as String? ?? '').toLowerCase();
+        final roomName = (classData['roomName'] as String? ?? '').toLowerCase();
+        return subjectName.contains(lowerCaseQuery) || roomName.contains(lowerCaseQuery);
+      }).toList();
     }
 
     setState(() {
@@ -127,21 +140,21 @@ class _ProfessorDashboardState extends State<ProfessorDashboard> {
   }
 
   Future<void> _selectDate(BuildContext context) async {
-    final dashboardState = Provider.of<DashboardStateProvider>(context, listen: false);
+    final dateProvider = Provider.of<DateProvider>(context, listen: false);
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: dashboardState.selectedDate,
+      initialDate: dateProvider.selectedDate,
       firstDate: DateTime.now().subtract(const Duration(days: 365)),
       lastDate: DateTime.now().add(const Duration(days: 365)),
     );
-    if (picked != null && picked != dashboardState.selectedDate) {
-      dashboardState.updateDate(picked);
+    if (picked != null && picked != dateProvider.selectedDate) {
+      dateProvider.updateDate(picked);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final dashboardState = Provider.of<DashboardStateProvider>(context);
+    final dateState = Provider.of<DateProvider>(context);
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -153,9 +166,12 @@ class _ProfessorDashboardState extends State<ProfessorDashboard> {
             children: [
               SizedBox(height: 15.h),
               AppTopBar(
-                searchHintText: 'Search Classes',
+                searchHintText: 'Search by subject or room...',
                 onSearchChanged: (value) {
-                  // TODO: Implement search logic
+                  setState(() {
+                    _searchQuery = value;
+                    _filterClasses();
+                  });
                 },
               ),
               SizedBox(height: 15.h),
@@ -164,7 +180,7 @@ class _ProfessorDashboardState extends State<ProfessorDashboard> {
               Row(
                 children: [
                   buildDateTimeChip(
-                    DateFormat('MMM d, yy').format(dashboardState.selectedDate),
+                    DateFormat('MMM d, yy').format(dateState.selectedDate),
                     CupertinoIcons.calendar,
                     () => _selectDate(context),
                   ),
@@ -249,7 +265,7 @@ class _ProfessorDashboardState extends State<ProfessorDashboard> {
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     Icon(
-                                      CupertinoIcons.calendar_badge_minus,
+                                      CupertinoIcons.search_circle,
                                       size: 50.sp,
                                       color: ColorPalette.iconGrey,
                                     ),
@@ -278,8 +294,8 @@ class _ProfessorDashboardState extends State<ProfessorDashboard> {
                                     try {
                                       final startTime = DateFormat('HH:mm').parse(startTimeString);
                                       final endTime = DateFormat('HH:mm').parse(endTimeString);
-                                      final classStartDateTime = DateTime(dashboardState.selectedDate.year, dashboardState.selectedDate.month, dashboardState.selectedDate.day, startTime.hour, startTime.minute);
-                                      final classEndDateTime = DateTime(dashboardState.selectedDate.year, dashboardState.selectedDate.month, dashboardState.selectedDate.day, endTime.hour, endTime.minute);
+                                      final classStartDateTime = DateTime(dateState.selectedDate.year, dateState.selectedDate.month, dateState.selectedDate.day, startTime.hour, startTime.minute);
+                                      final classEndDateTime = DateTime(dateState.selectedDate.year, dateState.selectedDate.month, dateState.selectedDate.day, endTime.hour, endTime.minute);
                                       hasClassStarted = now.isAfter(classStartDateTime) && now.isBefore(classEndDateTime);
                                     } catch (e) {
                                       _logger.e("Error parsing time: $e");

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:attendance_app/core/utils/semester_util.dart';
 import 'package:attendance_app/data/models/student_attendance.dart';
 import 'package:attendance_app/data/services/api/api_client.dart';
 import 'package:attendance_app/data/services/api/api_endpoints.dart';
@@ -85,6 +86,18 @@ class AttendanceRepository {
         '${ApiEndpoints.presentation}/$sessionId',
         {},
       );
+      return response['data'];
+    } on ApiException catch (e) {
+      throw e.message;
+    } catch (e) {
+      throw 'An unexpected error occurred. Please try again.';
+    }
+  }
+
+  Future<Map<String, dynamic>> getAttendanceSummary(String studentIndex) async {
+    try {
+      final semester = getCurrentSemester();
+      final response = await _apiClient.get('${ApiEndpoints.students}/$studentIndex/attendance-summary?semester=$semester');
       return response['data'];
     } on ApiException catch (e) {
       throw e.message;

@@ -1,20 +1,17 @@
-
 import 'package:attendance_app/core/utils/storage_keys.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class DashboardStateProvider extends ChangeNotifier {
+class DateProvider extends ChangeNotifier {
   DateTime _selectedDate = DateTime.now();
-  TimeOfDay _selectedTime = TimeOfDay.now();
 
   DateTime get selectedDate => _selectedDate;
-  TimeOfDay get selectedTime => _selectedTime;
 
-  DashboardStateProvider() {
-    _loadDateTimeFromCache();
+  DateProvider() {
+    _loadDateFromCache();
   }
 
-  Future<void> _loadDateTimeFromCache() async {
+  Future<void> _loadDateFromCache() async {
     final prefs = await SharedPreferences.getInstance();
     final timestamp = prefs.getInt(StorageKeys.cacheTimestamp);
     
@@ -24,37 +21,25 @@ class DashboardStateProvider extends ChangeNotifier {
       
       if (now.difference(cacheTime).inHours < 1) {
         final dateString = prefs.getString(StorageKeys.cachedDate);
-        final timeString = prefs.getString(StorageKeys.cachedTime);
         
-        if (dateString != null && timeString != null) {
+        if (dateString != null) {
           _selectedDate = DateTime.parse(dateString);
-          final timeParts = timeString.split(':');
-          _selectedTime = TimeOfDay(hour: int.parse(timeParts[0]), minute: int.parse(timeParts[1]));
           notifyListeners();
         }
       }
     }
   }
 
-  Future<void> _saveDateTimeToCache() async {
+  Future<void> _saveDateToCache() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(StorageKeys.cachedDate, _selectedDate.toIso8601String());
-    await prefs.setString(StorageKeys.cachedTime, '${_selectedTime.hour}:${_selectedTime.minute}');
     await prefs.setInt(StorageKeys.cacheTimestamp, DateTime.now().millisecondsSinceEpoch);
   }
 
   void updateDate(DateTime newDate) {
-    if (_selectedDate != newDate) {
+    if (_selectedDate.year != newDate.year || _selectedDate.month != newDate.month || _selectedDate.day != newDate.day) {
       _selectedDate = newDate;
-      _saveDateTimeToCache();
-      notifyListeners();
-    }
-  }
-
-  void updateTime(TimeOfDay newTime) {
-    if (_selectedTime != newTime) {
-      _selectedTime = newTime;
-      _saveDateTimeToCache();
+      _saveDateToCache();
       notifyListeners();
     }
   }

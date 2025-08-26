@@ -6,6 +6,7 @@ import mk.ukim.finki.attendanceappserver.domain.enums.AttendanceStatus;
 import mk.ukim.finki.attendanceappserver.dto.AttendanceConfirmationRequestDTO;
 import mk.ukim.finki.attendanceappserver.dto.AttendanceRegistrationRequestDTO;
 import mk.ukim.finki.attendanceappserver.dto.db.CustomStudentAttendance;
+import mk.ukim.finki.attendanceappserver.dto.AttendanceSummaryDTO;
 import mk.ukim.finki.attendanceappserver.repositories.ClassSessionRepository;
 import mk.ukim.finki.attendanceappserver.repositories.StudentAttendanceRepository;
 import mk.ukim.finki.attendanceappserver.repositories.models.StudentAttendance;
@@ -49,7 +50,7 @@ public class AttendanceService {
 
         return studentService.isStudentValid(dto.getStudentIndex())
                 .flatMap(isValid -> {
-                    if (!isValid) {
+                    if (Boolean.FALSE.equals(isValid)) {
                         return Mono.error(new IllegalArgumentException("Student is not valid or not enrolled in the current semester."));
                     }
                     return classSessionRepository.findByAttendanceToken(dto.getToken())
@@ -62,7 +63,7 @@ public class AttendanceService {
                                 return studentAttendanceRepository.existsStudentAttendanceByStudentIndexAndProfessorClassSessionId(
                                         dto.getStudentIndex(), session.getId())
                                         .flatMap(exists -> {
-                                            if (exists) {
+                                            if (Boolean.TRUE.equals(exists)) {
                                                 return Mono.error(new IllegalArgumentException("Attendance already registered for this session."));
                                             }
 
@@ -100,4 +101,22 @@ public class AttendanceService {
                 }).then();
     }
 
+    public Mono<AttendanceSummaryDTO> getAttendanceSummary(String studentIndex, String semester) {
+        log.info("Calculating attendance summary for student [{}] for semester [{}]", studentIndex, semester);
+        return studentAttendanceRepository.findAttendanceSummaryByStudentIndexAndSemester(studentIndex, semester)
+                .map(summary -> {
+                    int totalClasses = summary.getTotal_classes() != null ? summary.getTotal_classes() : 0;
+                    int attendedClasses = summary.getAttended_classes() != null ? summary.getAttended_classes() : 0;
+                    double percentage = (totalClasses > 0) ? ((double) attendedClasses / totalClasses) * 100 : 0.0;
+                    int absences = totalClasses - attendedClasses;
+
+                    return new AttendanceSummaryDTO(
+                            Math.round(percentage * 100.0) / 100.0, // Round to two decimal places
+                            attendedClasses,
+                            totalClasses,
+                            absences
+                    );
+                })
+                .defaultIfEmpty(new AttendanceSummaryDTO(0, 0, 0, 0));
+    }
 }

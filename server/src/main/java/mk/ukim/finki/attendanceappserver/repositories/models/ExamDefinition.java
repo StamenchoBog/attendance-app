@@ -1,40 +1,40 @@
 package mk.ukim.finki.attendanceappserver.repositories.models;
 
-import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NonNull;
-import mk.ukim.finki.attendanceappserver.exceptions.entity.PreventAnyUpdate;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 
 import java.time.LocalDateTime;
 
 @Data
-@Table(name = "exam_definition")
-@EntityListeners(PreventAnyUpdate.class)
+@Table("exam_definition")
 public class ExamDefinition {
 
     @Id
     @NonNull
-    @Column(name = "id")
+    @Column("id")
     private String id;
 
-    @Column(name = "subject_abbreviation")
+    @Column("subject_abbreviation")
     private String subjectAbbreviation;
 
-    @Column(name = "exam_session")
+    @Column("exam_session")
     private String examSession;
 
-    @Column(name = "duration_minutes")
+    @Column("duration_minutes")
     private int durationMinutes;
 
-    @Column(name = "type")
+    @Column("type")
     private String type;
 
-    @Column(name = "note")
+    @Column("note")
     private String note;
 
-    @Column(name = "last_update_time")
+    @Column("last_update_time")
     private LocalDateTime lastUpdateTime;
 
-    @Column(name = "last_update_user")
+    @Column("last_update_user")
     private LocalDateTime lastUpdateUser;
 }

@@ -1,0 +1,47 @@
+import 'package:attendance_app/core/utils/storage_keys.dart';
+import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+class TimeProvider extends ChangeNotifier {
+  TimeOfDay _selectedTime = TimeOfDay.now();
+
+  TimeOfDay get selectedTime => _selectedTime;
+
+  TimeProvider() {
+    _loadTimeFromCache();
+  }
+
+  Future<void> _loadTimeFromCache() async {
+    final prefs = await SharedPreferences.getInstance();
+    final timestamp = prefs.getInt(StorageKeys.cacheTimestamp);
+
+    if (timestamp != null) {
+      final cacheTime = DateTime.fromMillisecondsSinceEpoch(timestamp);
+      final now = DateTime.now();
+
+      if (now.difference(cacheTime).inHours < 1) {
+        final timeString = prefs.getString(StorageKeys.cachedTime);
+
+        if (timeString != null) {
+          final timeParts = timeString.split(':');
+          _selectedTime = TimeOfDay(hour: int.parse(timeParts[0]), minute: int.parse(timeParts[1]));
+          notifyListeners();
+        }
+      }
+    }
+  }
+
+  Future<void> _saveTimeToCache() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(StorageKeys.cachedTime, '${_selectedTime.hour}:${_selectedTime.minute}');
+    await prefs.setInt(StorageKeys.cacheTimestamp, DateTime.now().millisecondsSinceEpoch);
+  }
+
+  void updateTime(TimeOfDay newTime) {
+    if (_selectedTime != newTime) {
+      _selectedTime = newTime;
+      _saveTimeToCache();
+      notifyListeners();
+    }
+  }
+}

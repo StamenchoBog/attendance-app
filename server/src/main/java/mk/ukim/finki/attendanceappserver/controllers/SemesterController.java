@@ -6,7 +6,6 @@ import mk.ukim.finki.attendanceappserver.repositories.models.Semester;
 import mk.ukim.finki.attendanceappserver.services.SemesterService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
@@ -26,17 +25,14 @@ public class SemesterController {
         LOGGER.info("Request for retrieving all semesters");
         return semesterService.getAllSemesters()
                 .collectList()
-                .map(APIResponse::success)
-                .onErrorResume(e -> Mono.just(APIResponse.error(e.getMessage(), 500)));
+                .map(APIResponse::success);
     }
 
     @GetMapping(value = "/{code}")
-    public Mono<ResponseEntity<APIResponse<Semester>>> getSemesterByCode(@PathVariable("code") String code) {
+    public Mono<APIResponse<Semester>> getSemesterByCode(@PathVariable("code") String code) {
         LOGGER.info("Request for retrieving semester with id [{}]", code);
         return semesterService.getSemesterByCode(code)
-                .map(semester -> ResponseEntity.ok(APIResponse.success(semester)))
-                .switchIfEmpty(Mono.just(ResponseEntity.notFound().build()))
-                .onErrorResume(e -> Mono.just(ResponseEntity.internalServerError().body(APIResponse.error(e.getMessage(), 500))));
+                .map(APIResponse::success);
     }
 
 }

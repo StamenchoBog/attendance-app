@@ -35,7 +35,7 @@ public class QRCodeGeneratorService {
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("ProfessorClassSession not found")))
                 .flatMap(session -> {
                     String token = UUID.randomUUID().toString();
-                    LocalDateTime expirationTime = LocalDateTime.now().plusMinutes(5); // 5 minute expiration
+                    LocalDateTime expirationTime = LocalDateTime.now().plusMinutes(15); // 15 minute expiration
 
                     return classSessionRepository.updateAttendanceToken(session.getId(), token, expirationTime)
                             .then(Mono.fromCallable(() -> {

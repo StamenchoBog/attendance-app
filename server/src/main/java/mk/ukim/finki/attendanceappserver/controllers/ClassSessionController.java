@@ -29,8 +29,7 @@ public class ClassSessionController {
         LOGGER.info("Request for retrieving class sessions by professor ID [{}] for date [{}}", professorClassSessionFilterDTO.getProfessorId(), professorClassSessionFilterDTO.getDate());
         return classSessionService.getProfessorClassSessionsByProfessorAndDate(professorClassSessionFilterDTO)
                 .collectList()
-                .map(APIResponse::success)
-                .onErrorResume(e -> Mono.just(APIResponse.error(e.getMessage(), 500)));
+                .map(APIResponse::success);
     }
 
     @GetMapping(value = "/by-professor/{professorId}/current-week")
@@ -38,8 +37,7 @@ public class ClassSessionController {
         LOGGER.info("Request for retrieving class sessions by professor ID [{}] for current week [{}]", professorId, DateUtil.getCurrentWeekNumber());
         return classSessionService.getProfessorClassSessionsByProfessorIdForCurrentWeek(professorId)
                 .collectList()
-                .map(APIResponse::success)
-                .onErrorResume(e -> Mono.just(APIResponse.error(e.getMessage(), 500)));
+                .map(APIResponse::success);
     }
 
     @GetMapping(value = "/by-professor/{professorId}/current-month")
@@ -47,8 +45,7 @@ public class ClassSessionController {
         LOGGER.info("Request for retrieving class sessions by professor ID [{}] for current month [{}]", professorId, DateUtil.getCurrentMonthNumber());
         return classSessionService.getProfessorClassSessionsByProfessorIdForCurrentMonth(professorId)
                 .collectList()
-                .map(APIResponse::success)
-                .onErrorResume(e -> Mono.just(APIResponse.error(e.getMessage(), 500)));
+                .map(APIResponse::success);
     }
 
     //
@@ -60,7 +57,6 @@ public class ClassSessionController {
         LOGGER.info("Request for retrieving class sessions for student with index [{}] and given date and time [{}]", filterDTO.getStudentIndex(), filterDTO.getDateTime());
         return classSessionService.getClassSessionsByStudentIndexForGivenDateAndTime(filterDTO.getStudentIndex(), filterDTO.getDateTime())
                 .collectList()
-                .map(APIResponse::success)
-                .onErrorResume(e -> Mono.just(APIResponse.error(e.getMessage(), 500)));
+                .map(APIResponse::success);
     }
 }

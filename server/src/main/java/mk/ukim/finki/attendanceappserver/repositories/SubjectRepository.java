@@ -1,9 +1,9 @@
 package mk.ukim.finki.attendanceappserver.repositories;
 
 import mk.ukim.finki.attendanceappserver.repositories.models.Subject;
-import org.springframework.data.repository.reactive.ReactiveCrudRepository;
+import org.springframework.data.r2dbc.repository.R2dbcRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface SubjectRepository extends ReactiveCrudRepository<Subject, String> {
+public interface SubjectRepository extends R2dbcRepository<Subject, String> {
 }

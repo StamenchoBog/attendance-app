@@ -1,10 +1,16 @@
+import 'dart:async';
+import 'package:attendance_app/presentation/widgets/specific/profile_header_widget.dart';
+import 'package:attendance_app/presentation/widgets/static/skeleton_loader.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:attendance_app/core/theme/color_palette.dart';
-// Widgets
-import 'package:attendance_app/presentation/widgets/specific/profile_header_widget.dart';
 import 'package:attendance_app/core/services/device_identifier_service.dart';
+import 'package:logger/logger.dart';
+import 'package:provider/provider.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import '../../../data/models/student.dart';
+import '../../../data/providers/user_provider.dart';
 
 class DevicesOverviewScreen extends StatefulWidget {
   const DevicesOverviewScreen({super.key});
@@ -15,68 +21,54 @@ class DevicesOverviewScreen extends StatefulWidget {
 
 class _DevicesOverviewScreenState extends State<DevicesOverviewScreen> {
   final DeviceIdentifierService _deviceIdentifierService = DeviceIdentifierService();
-
-  String? _deviceName;
-  String? _deviceOS;
-  bool _isLoading = true;
+  late Future<Map<String, Map<String, String?>>> _deviceInfoFuture;
+  final Logger _logger = Logger();
+  Timer? _refreshTimer;
+  bool _isSubmitting = false;
 
   @override
   void initState() {
     super.initState();
-    _loadDeviceInfo();
+    _deviceInfoFuture = _loadDeviceInfo();
+    _startAutoRefresh();
   }
 
-  Future<void> _loadDeviceInfo() async {
-    try {
-      final deviceName = await _deviceIdentifierService.getDeviceName();
-      final deviceOS = await _deviceIdentifierService.getOsVersion();
-      
-      setState(() {
-        _deviceName = deviceName ?? 'Unknown';
-        _deviceOS = deviceOS ?? 'Unknown';
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _deviceName = 'Unknown';
-        _deviceOS = 'Unknown';
-        _isLoading = false;
-      });
-      print('Error loading device info: $e');
-    }
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
   }
 
-  Widget _buildDeviceInfoRow(BuildContext context, String label, String? value) {
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 6.h),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 13.sp,
-              color: ColorPalette.textSecondary,
-            ),
-          ),
-          SizedBox(height: 3.h),
-          Text(
-            value ?? 'Unknown',
-            style: TextStyle(
-              fontSize: 15.sp,
-              color: ColorPalette.textPrimary,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
+  void _startAutoRefresh() {
+    _refreshTimer = Timer.periodic(const Duration(minutes: 5), (timer) {
+      _logger.i("Auto-refreshing device info...");
+      if (mounted) {
+        setState(() {
+          _deviceInfoFuture = _loadDeviceInfo();
+        });
+      }
+    });
   }
 
-  // Placeholder for request action
-  void _requestDeviceChange() {
-    // TODO: Implement logic for requesting device change (e.g., show dialog, call API)
-    print('Request for device change tapped');
+
+  Future<Map<String, Map<String, String?>>> _loadDeviceInfo() async {
+    final user = Provider.of<UserProvider>(context, listen: false).currentUser as Student?;
+    // Fetch both registered and current device info in parallel
+    final results = await Future.wait([
+      _deviceIdentifierService.getRegisteredDevice(user?.studentIndex),
+      _getCurrentDeviceInfo(),
+    ]);
+    return {
+      'registered': results[0],
+      'current': results[1],
+    };
+  }
+
+  Future<Map<String, String?>> _getCurrentDeviceInfo() async {
+    final deviceName = await _deviceIdentifierService.getDeviceName();
+    final deviceOS = await _deviceIdentifierService.getOsVersion();
+    final deviceId = await _deviceIdentifierService.getPlatformSpecificIdentifier();
+    return {'name': deviceName, 'os': deviceOS, 'id': deviceId};
   }
 
   @override
@@ -84,10 +76,7 @@ class _DevicesOverviewScreenState extends State<DevicesOverviewScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text(
-          'Profile',
-          style: TextStyle( color: ColorPalette.textPrimary, fontWeight: FontWeight.w600, fontSize: 18.sp,),
-        ),
+        title: Text('Devices', style: TextStyle(color: ColorPalette.textPrimary, fontWeight: FontWeight.w600, fontSize: 18.sp)),
         centerTitle: true,
         backgroundColor: Colors.white,
         elevation: 0,
@@ -96,77 +85,194 @@ class _DevicesOverviewScreenState extends State<DevicesOverviewScreen> {
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
+      body: FutureBuilder<Map<String, Map<String, String?>>>(
+        future: _deviceInfoFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return _buildLoadingSkeleton();
+          } else if (snapshot.hasError) {
+            return const Center(child: Text('Failed to load device information.'));
+          } else if (snapshot.hasData) {
+            final registeredDevice = snapshot.data!['registered']!;
+            final currentDevice = snapshot.data!['current']!;
+            final bool devicesMatch = registeredDevice['id'] == currentDevice['id'];
 
-      body: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 20.w),
-        child: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                // Reusable Profile Header
-                const ProfileHeaderWidget(
-                    // Pass actual user data if available/needed
-                ),
-                SizedBox(height: 30.h),
+            if (devicesMatch) {
+              _refreshTimer?.cancel();
+            }
 
-                // "Devices" Section Header (matching Language screen style)
-                Padding(
-                  padding: EdgeInsets.only(bottom: 15.h),
-                  child: Row(
-                    children: [
-                      Text( 'Devices', style: TextStyle( fontSize: 15.sp, color: ColorPalette.textPrimary,),),
-                      const Spacer(),
-                      Icon( CupertinoIcons.chevron_down, size: 20.sp, color: ColorPalette.iconGrey.withValues(alpha: 0.8),),
-                    ],
-                  ),
-                ),
-                Divider(height: 1.h, color: Colors.grey[200]),
-                SizedBox(height: 30.h),
-
-                // --- Device Information Section ---
-                Text(
-                  'Device information',
-                  // Add textAlign here for explicit centering if text wraps
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold, color: ColorPalette.textPrimary),
-                ),
-                
-                SizedBox(height: 15.h),
-
-                _buildDeviceInfoRow(context, 'Name', _deviceName),
-
-                SizedBox(height: 10.h),
-
-                _buildDeviceInfoRow(context, 'Operating System', _deviceOS),
-
-                // --- End Device Information Section ---
-
-                const Spacer(), 
-
-                // --- Request Button ---
-                Padding(
-                  padding: EdgeInsets.only(bottom: 25.h, top: 15.h), // Adjust padding
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: ColorPalette.darkBlue,
-                      foregroundColor: Colors.white,
-                      minimumSize: Size(double.infinity, 50.h), // Make button wide
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12.r), // Consistent rounding
-                      ),
-                      textStyle: TextStyle(
-                        fontSize: 16.sp,
-                        fontWeight: FontWeight.w600,
-                      ),
+            return Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20.w),
+              child: Column(
+                children: [
+                  Expanded(
+                    child: ListView(
+                      children: [
+                        const ProfileHeaderWidget(),
+                        SizedBox(height: 25.h),
+                        Text(
+                          'For security, your attendance can only be marked from one registered device.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 14.sp, color: ColorPalette.textSecondary),
+                        ),
+                        SizedBox(height: 25.h),
+                        _buildDeviceInfoCard(
+                          title: 'Registered for Attendance',
+                          deviceName: registeredDevice['name'] ?? 'Unknown',
+                          deviceOs: registeredDevice['os'] ?? 'Unknown',
+                          icon: CupertinoIcons.checkmark_shield_fill,
+                          iconColor: Colors.green,
+                        ),
+                        SizedBox(height: 15.h),
+                        _buildDeviceInfoCard(
+                          title: 'Current Device',
+                          deviceName: currentDevice['name'] ?? 'Unknown',
+                          deviceOs: currentDevice['os'] ?? 'Unknown',
+                          icon: CupertinoIcons.device_phone_portrait,
+                          iconColor: ColorPalette.darkBlue,
+                        ),
+                        SizedBox(height: 20.h),
+                        _buildStatusIndicator(devicesMatch),
+                      ],
                     ),
-                    onPressed: _requestDeviceChange,
-                    child: const Text('Request for device change'),
                   ),
-                ),
-              ],
+                  _buildActionButton(devicesMatch),
+                ],
+              ),
+            );
+          }
+          return const SizedBox.shrink();
+        },
+      ),
+    );
+  }
+
+  Widget _buildDeviceInfoCard({
+    required String title,
+    required String deviceName,
+    required String deviceOs,
+    required IconData icon,
+    required Color iconColor,
+  }) {
+    return Card(
+      elevation: 0,
+      color: ColorPalette.lightestBlue,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+      child: Padding(
+        padding: EdgeInsets.all(16.w),
+        child: Row(
+          children: [
+            Icon(icon, color: iconColor, size: 30.sp),
+            SizedBox(width: 15.w),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: TextStyle(fontSize: 13.sp, color: ColorPalette.textSecondary, fontWeight: FontWeight.w500)),
+                  SizedBox(height: 4.h),
+                  Text(deviceName, style: TextStyle(fontSize: 16.sp, color: ColorPalette.textPrimary, fontWeight: FontWeight.bold)),
+                  SizedBox(height: 2.h),
+                  Text(deviceOs, style: TextStyle(fontSize: 13.sp, color: ColorPalette.textSecondary)),
+                ],
+              ),
             ),
+          ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildStatusIndicator(bool devicesMatch) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+      decoration: BoxDecoration(
+        color: devicesMatch ? Colors.green.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8.r),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            devicesMatch ? CupertinoIcons.check_mark_circled : CupertinoIcons.exclamationmark_triangle,
+            color: devicesMatch ? Colors.green : Colors.orange,
+            size: 20.sp,
+          ),
+          SizedBox(width: 8.w),
+          Text(
+            devicesMatch ? 'Devices Match' : 'Device Mismatch',
+            style: TextStyle(
+              fontSize: 14.sp,
+              fontWeight: FontWeight.w600,
+              color: devicesMatch ? Colors.green.shade800 : Colors.orange.shade800,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButton(bool devicesMatch) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: 30.h, top: 15.h),
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: devicesMatch || _isSubmitting ? Colors.grey : ColorPalette.darkBlue,
+          foregroundColor: Colors.white,
+          minimumSize: Size(double.infinity, 55.h),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+          textStyle: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600),
+        ),
+        onPressed: devicesMatch || _isSubmitting ? null : () async {
+          setState(() => _isSubmitting = true);
+          try {
+            final user = Provider.of<UserProvider>(context, listen: false).currentUser as Student?;
+            if (user == null) return;
+
+            await _deviceIdentifierService.requestDeviceLink(user.studentIndex);
+
+            Fluttertoast.showToast(
+                msg: "Request submitted! It will be processed shortly.",
+                toastLength: Toast.LENGTH_LONG,
+                gravity: ToastGravity.TOP,
+                backgroundColor: Colors.green,
+                textColor: Colors.white,
+                fontSize: 16.0.sp
+            );
+
+          } catch (e) {
+            Fluttertoast.showToast(
+                msg: "Error: ${e.toString()}",
+                toastLength: Toast.LENGTH_LONG,
+                gravity: ToastGravity.TOP,
+                backgroundColor: Colors.red,
+                textColor: Colors.white,
+                fontSize: 16.0.sp
+            );
+          } finally {
+            if (mounted) {
+              setState(() => _isSubmitting = false);
+            }
+          }
+        },
+        child: _isSubmitting
+            ? const CircularProgressIndicator(color: Colors.white)
+            : Text(devicesMatch ? 'Device Linked' : 'Link This Device'),
+      ),
+    );
+  }
+
+  Widget _buildLoadingSkeleton() {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 20.w),
+      child: Column(
+        children: [
+          const ProfileHeaderWidget(),
+          SizedBox(height: 50.h),
+          const SkeletonLoader(width: double.infinity, height: 80),
+          SizedBox(height: 15.h),
+          const SkeletonLoader(width: double.infinity, height: 80),
+        ],
+      ),
     );
   }
 }

@@ -377,6 +377,7 @@ VALUES
     -- Student 1612023 attending KI class on 2025-08-24 (pcs_id = 9)
     (65, '1612023', 9, '2025-08-24 09:05:00');
 
+
 --changeset stamencho-bogdanovski:add-block-classes-for-testing
 -- =====================================================================================================================
 -- Add block classes for UI testing in the mobile app

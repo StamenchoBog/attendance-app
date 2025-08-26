@@ -1,16 +1,16 @@
 package mk.ukim.finki.attendanceappserver.controllers;
 
 import lombok.AllArgsConstructor;
+import mk.ukim.finki.attendanceappserver.dto.AttendanceSummaryDTO;
+import mk.ukim.finki.attendanceappserver.dto.DeviceLinkRequestDTO;
 import mk.ukim.finki.attendanceappserver.dto.generic.APIResponse;
 import mk.ukim.finki.attendanceappserver.repositories.models.Student;
+import mk.ukim.finki.attendanceappserver.services.AttendanceService;
+import mk.ukim.finki.attendanceappserver.services.DeviceManagementService;
 import mk.ukim.finki.attendanceappserver.services.StudentService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
@@ -21,6 +21,8 @@ import java.util.List;
 public class StudentController {
 
     private final StudentService studentService;
+    private final AttendanceService attendanceService;
+    private final DeviceManagementService deviceManagementService;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(StudentController.class);
 
@@ -29,17 +31,14 @@ public class StudentController {
         LOGGER.info("Request for retrieving all students");
         return studentService.getStudents()
                 .collectList()
-                .map(APIResponse::success)
-                .onErrorResume(e -> Mono.just(APIResponse.error(e.getMessage(), 500)));
+                .map(APIResponse::success);
     }
 
     @GetMapping(value = "/{studentIndex}")
-    public Mono<ResponseEntity<APIResponse<Student>>> getStudentByIndex(@PathVariable String studentIndex) {
+    public Mono<APIResponse<Student>> getStudentByIndex(@PathVariable String studentIndex) {
         LOGGER.info("Request for retrieving student by student index [{}]", studentIndex);
         return studentService.getStudentByIndex(studentIndex)
-                .map(student -> ResponseEntity.ok(APIResponse.success(student)))
-                .switchIfEmpty(Mono.just(ResponseEntity.notFound().build()))
-                .onErrorResume(e -> Mono.just(ResponseEntity.internalServerError().body(APIResponse.error(e.getMessage(), 500))));
+                .map(APIResponse::success);
     }
 
     @GetMapping(value = "/by-professor/{professorId}")
@@ -47,15 +46,35 @@ public class StudentController {
         LOGGER.info("Request for retrieving all students grouped by course and by professor with ID [{}]", professorId);
         return studentService.findStudentsEnrolledOnSubjectsWithProfessorId(professorId)
                 .collectList()
-                .map(APIResponse::success)
-                .onErrorResume(e -> Mono.just(APIResponse.error(e.getMessage(), 500)));
+                .map(APIResponse::success);
     }
 
     @GetMapping("/is-valid/{studentIndex}")
-    public Mono<ResponseEntity<APIResponse<Boolean>>> isStudentValid(@PathVariable String studentIndex) {
+    public Mono<APIResponse<Boolean>> isStudentValid(@PathVariable String studentIndex) {
         LOGGER.info("Request for validating student with student index [{}]", studentIndex);
         return studentService.isStudentValid(studentIndex)
-                .map(isValid -> ResponseEntity.ok(APIResponse.success(isValid)))
-                .onErrorResume(e -> Mono.just(ResponseEntity.internalServerError().body(APIResponse.error(e.getMessage(), 500))));
+                .map(APIResponse::success);
+    }
+
+    @GetMapping("/{studentIndex}/attendance-summary")
+    public Mono<APIResponse<AttendanceSummaryDTO>> getAttendanceSummary(
+            @PathVariable String studentIndex,
+            @RequestParam String semester) {
+        LOGGER.info("Request for attendance summary for student [{}] and semester [{}]", studentIndex, semester);
+        return attendanceService.getAttendanceSummary(studentIndex, semester)
+                .map(APIResponse::success);
+    }
+
+    @GetMapping("/{studentIndex}/registered-device")
+    public Mono<APIResponse<DeviceLinkRequestDTO>> getRegisteredDevices(@PathVariable String studentIndex) {
+        LOGGER.info("Request for registered devices for student [{}]", studentIndex);
+        return deviceManagementService.getRegisteredDevices(studentIndex);
+    }
+
+    @PostMapping("/{studentIndex}/device-link-request")
+    public Mono<APIResponse<Void>> requestDeviceLink(@PathVariable String studentIndex, @RequestBody DeviceLinkRequestDTO dto) {
+        LOGGER.info("Request to link a new device for student [{}]", studentIndex);
+        return deviceManagementService.createDeviceLinkRequest(studentIndex, dto)
+                .then(Mono.just(APIResponse.<Void>success(null)));
     }
 }

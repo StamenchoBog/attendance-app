@@ -1,6 +1,7 @@
 import 'package:attendance_app/core/services/device_identifier_service.dart';
 import 'package:attendance_app/data/models/student.dart';
-import 'package:attendance_app/data/providers/dashboard_state_provider.dart';
+import 'package:attendance_app/data/providers/date_provider.dart';
+import 'package:attendance_app/data/providers/time_provider.dart';
 import 'package:attendance_app/presentation/screens/qr_scanner_screen.dart';
 import 'package:attendance_app/presentation/widgets/specific/class_details_bottom_sheet.dart';
 import 'package:flutter/material.dart';
@@ -34,12 +35,17 @@ class _StudentDashboardState extends State<StudentDashboard> {
   int _selectedIndex = 0;
   bool _isLoading = false;
   String? _errorMessage;
-  List<dynamic> _classes = [];
+  
+  List<dynamic> _allClasses = [];
+  List<dynamic> _filteredClasses = [];
+  String _searchQuery = '';
+
   final ClassSessionRepository _classSessionRepository =
       locator<ClassSessionRepository>();
   final DeviceIdentifierService _deviceIdentifierService =
       DeviceIdentifierService();
-  DashboardStateProvider? _dashboardStateProvider;
+  DateProvider? _dateProvider;
+  TimeProvider? _timeProvider;
 
   @override
   void initState() {
@@ -49,11 +55,19 @@ class _StudentDashboardState extends State<StudentDashboard> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final provider = Provider.of<DashboardStateProvider>(context);
-    if (provider != _dashboardStateProvider) {
-      _dashboardStateProvider?.removeListener(_loadClasses);
-      _dashboardStateProvider = provider;
-      _dashboardStateProvider?.addListener(_loadClasses);
+    final dateProvider = Provider.of<DateProvider>(context);
+    final timeProvider = Provider.of<TimeProvider>(context);
+
+    if (dateProvider != _dateProvider || timeProvider != _timeProvider) {
+      _dateProvider?.removeListener(_loadClasses);
+      _timeProvider?.removeListener(_loadClasses);
+      
+      _dateProvider = dateProvider;
+      _timeProvider = timeProvider;
+
+      _dateProvider?.addListener(_loadClasses);
+      _timeProvider?.addListener(_loadClasses);
+      
       // Initial load
       _loadClasses();
     }
@@ -61,7 +75,8 @@ class _StudentDashboardState extends State<StudentDashboard> {
 
   @override
   void dispose() {
-    _dashboardStateProvider?.removeListener(_loadClasses);
+    _dateProvider?.removeListener(_loadClasses);
+    _timeProvider?.removeListener(_loadClasses);
     super.dispose();
   }
 
@@ -76,8 +91,10 @@ class _StudentDashboardState extends State<StudentDashboard> {
       final classes = await _getClasses();
       if (!mounted) return;
       setState(() {
-        _classes = classes;
+        _allClasses = classes;
+        _filteredClasses = classes;
         _isLoading = false;
+        _filterClasses();
       });
     } catch (e) {
       if (!mounted) return;
@@ -86,6 +103,30 @@ class _StudentDashboardState extends State<StudentDashboard> {
         _isLoading = false;
       });
     }
+  }
+
+  void _filterClasses() {
+    if (_searchQuery.isEmpty) {
+      setState(() {
+        _filteredClasses = _allClasses;
+      });
+      return;
+    }
+
+    final lowerCaseQuery = _searchQuery.toLowerCase();
+    final filtered = _allClasses.where((classData) {
+      final subjectName = (classData['subjectName'] as String? ?? '').toLowerCase();
+      final roomName = (classData['classRoomName'] as String? ?? '').toLowerCase();
+      final professorName = (classData['professorName'] as String? ?? '').toLowerCase();
+      
+      return subjectName.contains(lowerCaseQuery) ||
+             roomName.contains(lowerCaseQuery) ||
+             professorName.contains(lowerCaseQuery);
+    }).toList();
+
+    setState(() {
+      _filteredClasses = filtered;
+    });
   }
 
   void _onItemTapped(int index) {
@@ -129,10 +170,10 @@ class _StudentDashboardState extends State<StudentDashboard> {
   }
 
   Future<void> _selectDate(BuildContext context) async {
-    final dashboardState = Provider.of<DashboardStateProvider>(context, listen: false);
+    final dateProvider = Provider.of<DateProvider>(context, listen: false);
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: dashboardState.selectedDate,
+      initialDate: dateProvider.selectedDate,
       firstDate: DateTime(DateTime.now().year - 1),
       lastDate: DateTime(DateTime.now().year + 1),
       builder: (context, child) {
@@ -153,16 +194,16 @@ class _StudentDashboardState extends State<StudentDashboard> {
         );
       },
     );
-    if (picked != null && picked != dashboardState.selectedDate) {
-      dashboardState.updateDate(picked);
+    if (picked != null && picked != dateProvider.selectedDate) {
+      dateProvider.updateDate(picked);
     }
   }
 
   Future<void> _selectTime(BuildContext context) async {
-    final dashboardState = Provider.of<DashboardStateProvider>(context, listen: false);
+    final timeProvider = Provider.of<TimeProvider>(context, listen: false);
     final TimeOfDay? picked = await showTimePicker(
         context: context,
-        initialTime: dashboardState.selectedTime,
+        initialTime: timeProvider.selectedTime,
         builder: (BuildContext context, Widget? child) {
           return MediaQuery(
             data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
@@ -170,14 +211,15 @@ class _StudentDashboardState extends State<StudentDashboard> {
           );
         }
     );
-    if (picked != null && picked != dashboardState.selectedTime) {
-      dashboardState.updateTime(picked);
+    if (picked != null && picked != timeProvider.selectedTime) {
+      timeProvider.updateTime(picked);
     }
   }
 
   Future<List<dynamic>> _getClasses() async {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
-    final dashboardState = Provider.of<DashboardStateProvider>(context, listen: false);
+    final dateProvider = Provider.of<DateProvider>(context, listen: false);
+    final timeProvider = Provider.of<TimeProvider>(context, listen: false);
     final user = userProvider.currentUser;
     
     if (user == null || user is! Student) {
@@ -189,11 +231,11 @@ class _StudentDashboardState extends State<StudentDashboard> {
     final studentIndex = student.studentIndex;
     
     final selectedDateTime = DateTime(
-      dashboardState.selectedDate.year,
-      dashboardState.selectedDate.month,
-      dashboardState.selectedDate.day,
-      dashboardState.selectedTime.hour,
-      dashboardState.selectedTime.minute,
+      dateProvider.selectedDate.year,
+      dateProvider.selectedDate.month,
+      dateProvider.selectedDate.day,
+      timeProvider.selectedTime.hour,
+      timeProvider.selectedTime.minute,
     );
     
     return await _classSessionRepository.getClassSessionsByStudentAndDateTime(
@@ -204,7 +246,8 @@ class _StudentDashboardState extends State<StudentDashboard> {
 
   @override
   Widget build(BuildContext context) {
-    final dashboardState = Provider.of<DashboardStateProvider>(context);
+    final dateState = Provider.of<DateProvider>(context);
+    final timeState = Provider.of<TimeProvider>(context);
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -217,9 +260,12 @@ class _StudentDashboardState extends State<StudentDashboard> {
               SizedBox(height: 15.h), 
 
               AppTopBar(
-                searchHintText: 'Search',
+                searchHintText: 'Search by subject, room, professor...',
                 onSearchChanged: (value) {
-                  _logger.i('Search query: $value');
+                  setState(() {
+                    _searchQuery = value;
+                    _filterClasses();
+                  });
                 },
               ),
 
@@ -232,15 +278,15 @@ class _StudentDashboardState extends State<StudentDashboard> {
               Row(
                 children: [
                   buildDateTimeChip(
-                    DateFormat('MMM d, yy').format(dashboardState.selectedDate),
+                    DateFormat('MMM d, yy').format(dateState.selectedDate),
                     CupertinoIcons.calendar,
                     () => _selectDate(context),
                   ),
                   SizedBox(width: 15.w),
                   buildDateTimeChip(
                     DateFormat('HH:mm').format(DateTime(
-                    dashboardState.selectedDate.year, dashboardState.selectedDate.month, dashboardState.selectedDate.day,
-                    dashboardState.selectedTime.hour, dashboardState.selectedTime.minute)),
+                    dateState.selectedDate.year, dateState.selectedDate.month, dateState.selectedDate.day,
+                    timeState.selectedTime.hour, timeState.selectedTime.minute)),
                     CupertinoIcons.clock,
                   () => _selectTime(context),
                   ),
@@ -277,13 +323,13 @@ class _StudentDashboardState extends State<StudentDashboard> {
                               ],
                             ),
                           )
-                        : _classes.isEmpty
+                        : _filteredClasses.isEmpty
                             ? Center(
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     Icon(
-                                      CupertinoIcons.calendar_badge_minus,
+                                      CupertinoIcons.search_circle,
                                       size: 50.sp,
                                       color: ColorPalette.iconGrey,
                                     ),
@@ -291,7 +337,9 @@ class _StudentDashboardState extends State<StudentDashboard> {
                                     Padding(
                                       padding: EdgeInsets.symmetric(horizontal: 20.w),
                                       child: Text(
-                                        'No classes scheduled for the selected time/date.',
+                                        _searchQuery.isEmpty
+                                          ? 'No classes scheduled for the selected time/date.'
+                                          : 'No classes found for "$_searchQuery".',
                                         style: TextStyle(fontSize: 14.sp, color: ColorPalette.textSecondary),
                                         textAlign: TextAlign.center,
                                       ),
@@ -301,9 +349,28 @@ class _StudentDashboardState extends State<StudentDashboard> {
                               )
                             : ListView.builder(
                                 padding: EdgeInsets.only(top: 5.h),
-                                itemCount: _classes.length,
+                                itemCount: _filteredClasses.length,
                                 itemBuilder: (context, index) {
-                                  final classData = _classes[index];
+                                  final classData = _filteredClasses[index];
+                                  final now = DateTime.now();
+                                  final startTimeString = classData['classStartTime'] as String?;
+                                  final endTimeString = classData['classEndTime'] as String?;
+                                  bool isOngoing = false;
+
+                                  if (startTimeString != null && endTimeString != null) {
+                                    try {
+                                      final startParts = startTimeString.split(':');
+                                      final endParts = endTimeString.split(':');
+                                      final selectedDate = dateState.selectedDate;
+
+                                      final classStartDateTime = DateTime(selectedDate.year, selectedDate.month, selectedDate.day, int.parse(startParts[0]), int.parse(startParts[1]));
+                                      final classEndDateTime = DateTime(selectedDate.year, selectedDate.month, selectedDate.day, int.parse(endParts[0]), int.parse(endParts[1]));
+                                      
+                                      isOngoing = now.isAfter(classStartDateTime) && now.isBefore(classEndDateTime);
+                                    } catch (e) {
+                                      _logger.e("Error parsing class time: $e");
+                                    }
+                                  }
 
                                   return GestureDetector(
                                     onTap: () => _onClassTapped(classData),
@@ -311,7 +378,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                                       classData['subjectName'] ?? 'N/A',
                                       classData['classRoomName'] ?? 'N/A',
                                       classData['classStartTime'] ?? 'N/A',
-                                      classData['hasClassStarted'] ?? false,
+                                      isOngoing,
                                     ),
                                   );
                                 },

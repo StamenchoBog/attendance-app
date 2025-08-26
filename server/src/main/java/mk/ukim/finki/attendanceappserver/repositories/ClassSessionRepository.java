@@ -3,7 +3,7 @@ package mk.ukim.finki.attendanceappserver.repositories;
 import mk.ukim.finki.attendanceappserver.dto.db.ClassSessionOverview;
 import mk.ukim.finki.attendanceappserver.dto.db.ProfessorClassSession;
 import org.springframework.data.r2dbc.repository.Query;
-import org.springframework.data.repository.reactive.ReactiveCrudRepository;
+import org.springframework.data.r2dbc.repository.R2dbcRepository;
 import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 @Repository
-public interface ClassSessionRepository extends ReactiveCrudRepository<mk.ukim.finki.attendanceappserver.repositories.models.ProfessorClassSession, Integer> {
+public interface ClassSessionRepository extends R2dbcRepository<mk.ukim.finki.attendanceappserver.repositories.models.ProfessorClassSession, Integer> {
 
     Mono<mk.ukim.finki.attendanceappserver.repositories.models.ProfessorClassSession> getProfessorClassSessionsByScheduledClassSessionId(@NonNull int scheduledClassSessionId);
 

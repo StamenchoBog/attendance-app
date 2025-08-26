@@ -1,64 +1,58 @@
 package mk.ukim.finki.attendanceappserver.repositories.models;
 
-import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NonNull;
-import mk.ukim.finki.attendanceappserver.exceptions.entity.PreventAnyUpdate;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 
 import java.time.LocalDateTime;
 import java.util.Set;
 
 @Data
-@Table(name = "subject_exam")
-@EntityListeners(PreventAnyUpdate.class)
+@Table("subject_exam")
 public class SubjectExam {
 
     @Id
     @NonNull
-    @Column(name = "id")
+    @Column("id")
     private String id;
 
-    @Column(name = "session_name")
+    @Column("session_name")
     private String sessionName;
 
-    @Column(name = "duration_minutes")
+    @Column("duration_minutes")
     private int durationMinutes;
 
-    @Column(name = "previous_year_attendants_number")
+    @Column("previous_year_attendants_number")
     private int previousYearAttendantsNumber;
 
-    @Column(name = "attendants_number")
+    @Column("attendants_number")
     private int attendantsNumber;
 
-    @Column(name = "num_repetitions")
+    @Column("num_repetitions")
     private int numberOfRepetitions;
 
-    @Column(name = "from_time")
+    @Column("from_time")
     private LocalDateTime fromTime;
 
-    @Column(name = "to_time")
+    @Column("to_time")
     private LocalDateTime toTime;
 
-    @Column(name = "comment", length = 5000)
+    @Column("comment")
     private String comment;
 
-    @Column(name = "definition_id")
+    @Column("definition_id")
     private String definitionId;
 
-    @Column(name = "previous_year_total_students")
+    @Column("previous_year_total_students")
     private int previousYearTotalStudents;
 
-    @Column(name = "total_students")
+    @Column("total_students")
     private int totalStudents;
 
-    @Column(name = "expected_number")
+    @Column("expected_number")
     private int expectedNumber;
 
-    @ManyToMany(fetch = FetchType.LAZY, targetEntity = Room.class)
-    @JoinTable(
-            name = "subject_exam_rooms",
-            joinColumns = @JoinColumn(name = "rooms_name"),
-            inverseJoinColumns = @JoinColumn(name = "subject_exam_id")
-    )
     private Set<Room> rooms;
 }
