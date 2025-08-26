@@ -37,7 +37,7 @@ dependencies {
 	annotationProcessor 'org.projectlombok:lombok:1.18.38'
 	// R2DBC (Reactive Database Connectivity)
 	implementation 'io.r2dbc:r2dbc-spi:1.0.0.RELEASE'
-	implementation 'org.springframework.data:spring-data-r2dbc:3.4.3'
+	implementation 'org.springframework.data:spring-data-r2dbc:3.5.3'
 	implementation 'org.postgresql:r2dbc-postgresql:1.0.7.RELEASE'
 	implementation 'org.postgresql:postgresql:42.7.7'
 	implementation 'org.hibernate.reactive:hibernate-reactive-core:2.4.8.Final'
