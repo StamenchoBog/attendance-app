@@ -41,7 +41,7 @@ dependencies {
 	implementation 'org.postgresql:r2dbc-postgresql:1.0.7.RELEASE'
 	implementation 'org.postgresql:postgresql:42.7.7'
 	implementation 'org.hibernate.reactive:hibernate-reactive-core:2.4.8.Final'
-	implementation 'org.liquibase:liquibase-core:4.31.0'
+	implementation 'org.liquibase:liquibase-core:4.33.0'
 	// Feature Dependencies
 	implementation 'com.google.zxing:javase:3.5.3'  // QR Code generation/reading
 	// Swagger documentation
