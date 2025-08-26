@@ -108,36 +108,36 @@ This diagram illustrates the secure, automated process for handling a student's 
 
 ```mermaid
 sequenceDiagram
-    participant Student (Mobile App)
-    participant Backend API
-    participant Database
-    participant Scheduled Job
-    participant Administrator
+  participant Student as Student (Mobile App)
+  participant API as Backend API
+  participant DB as Database
+  participant Job as Scheduled Job
+  participant Admin as Administrator
 
-    Student (Mobile App)->>+Backend API: POST /.../device-link-request (New Device Info)
-    Backend API->>+Database: Save request with status 'PENDING'
-    Database-->>-Backend API: Confirm save
-    Backend API-->>-Student (Mobile App): "Request submitted for processing"
+  Student->>API: POST /.../device-link-request (New Device Info)
+  API->>DB: Save request with status 'PENDING'
+  DB-->>API: Confirm save
+  API-->>Student: "Request submitted for processing"
 
-    loop Every 5 minutes
-        Scheduled Job->>Scheduled Job: Wake up
-        Scheduled Job->>+Database: Find requests with status 'PENDING'
-        Database-->>-Scheduled Job: Return pending request for Student X
-        
-        Scheduled Job->>+Database: Any other requests from Student X in last 6 months?
-        alt No recent requests found
-            Database-->>-Scheduled Job: [ ] (Empty List)
-            Scheduled Job->>+Database: Update StudentDevice record with new Device ID
-            Database-->>-Scheduled Job: Confirm update
-            Scheduled Job->>+Database: Update request status to 'AUTO_APPROVED'
-            Database-->>-Scheduled Job: Confirm update
-        else Recent request(s) exist
-            Database-->>-Scheduled Job: [...] (List of recent requests)
-            Scheduled Job->>+Database: Update request status to 'FLAGGED_FOR_REVIEW'
-            Database-->>-Scheduled Job: Confirm update
-            Scheduled Job->>Administrator: [Log] SIMULATE EMAIL: "Request for Student X needs review"
-        end
+  loop Every 5 minutes
+    Job->>Job: Wake up
+    Job->>DB: Find requests with status 'PENDING'
+    DB-->>Job: Return pending request for Student X
+
+    Job->>DB: Any other requests from Student X in last 6 months?
+    alt No recent requests found
+      DB-->>Job: [ ] (Empty List)
+      Job->>DB: Update StudentDevice record with new Device ID
+      DB-->>Job: Confirm update
+      Job->>DB: Update request status to 'AUTO_APPROVED'
+      DB-->>Job: Confirm update
+    else Recent request(s) exist
+      DB-->>Job: [...] (List of recent requests)
+      Job->>DB: Update request status to 'FLAGGED_FOR_REVIEW'
+      DB-->>Job: Confirm update
+      Job->>Admin: [Log] SIMULATE EMAIL: "Request for Student X needs review"
     end
+  end
 ```
 
 ---
