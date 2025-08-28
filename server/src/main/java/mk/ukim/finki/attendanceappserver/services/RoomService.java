@@ -1,8 +1,8 @@
 package mk.ukim.finki.attendanceappserver.services;
 
 import lombok.AllArgsConstructor;
-import mk.ukim.finki.attendanceappserver.repositories.RoomRepository;
-import mk.ukim.finki.attendanceappserver.repositories.models.Room;
+import mk.ukim.finki.attendanceappserver.domain.repositories.RoomRepository;
+import mk.ukim.finki.attendanceappserver.domain.models.Room;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;

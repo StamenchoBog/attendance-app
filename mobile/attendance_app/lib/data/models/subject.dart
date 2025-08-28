@@ -30,5 +30,14 @@ class Subject extends Equatable {
   Map<String, dynamic> toJson() => _$SubjectToJson(this);
 
   @override
-  List<Object?> get props => [id, name, nameEn, semester, weeklyLectureClasses, weeklyAuditoriumClasses, weeklyLabClasses, abbreviation];
+  List<Object?> get props => [
+    id,
+    name,
+    nameEn,
+    semester,
+    weeklyLectureClasses,
+    weeklyAuditoriumClasses,
+    weeklyLabClasses,
+    abbreviation,
+  ];
 }

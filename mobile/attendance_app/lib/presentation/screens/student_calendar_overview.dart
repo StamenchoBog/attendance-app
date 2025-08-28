@@ -31,31 +31,50 @@ class _CalendarOverviewState extends State<CalendarOverview> {
 
     // The student endpoint requires a DateTime, so we'll just use the beginning of the day
     final selectedDateTime = DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
-    final classes = await _classSessionRepository.getClassSessionsByStudentAndDateTime(user.studentIndex, selectedDateTime);
+    final classes = await _classSessionRepository.getClassSessionsByStudentAndDateTime(
+      user.studentIndex,
+      selectedDateTime,
+    );
 
-    return classes.map((classData) {
-      final startTimeStr = classData['classStartTime'];
-      final endTimeStr = classData['classEndTime'];
-      if (startTimeStr == null || endTimeStr == null) return null;
+    return classes
+        .map((classData) {
+          final startTimeStr = classData['classStartTime'];
+          final endTimeStr = classData['classEndTime'];
+          if (startTimeStr == null || endTimeStr == null) return null;
 
-      final startParts = startTimeStr.split(':');
-      final endParts = endTimeStr.split(':');
-      if (startParts.length < 2 || endParts.length < 2) return null;
+          final startParts = startTimeStr.split(':');
+          final endParts = endTimeStr.split(':');
+          if (startParts.length < 2 || endParts.length < 2) return null;
 
-      try {
-        final startDateTime = DateTime(selectedDate.year, selectedDate.month, selectedDate.day, int.parse(startParts[0]), int.parse(startParts[1]));
-        final endDateTime = DateTime(selectedDate.year, selectedDate.month, selectedDate.day, int.parse(endParts[0]), int.parse(endParts[1]));
-        final duration = endDateTime.difference(startDateTime);
+          try {
+            final startDateTime = DateTime(
+              selectedDate.year,
+              selectedDate.month,
+              selectedDate.day,
+              int.parse(startParts[0]),
+              int.parse(startParts[1]),
+            );
+            final endDateTime = DateTime(
+              selectedDate.year,
+              selectedDate.month,
+              selectedDate.day,
+              int.parse(endParts[0]),
+              int.parse(endParts[1]),
+            );
+            final duration = endDateTime.difference(startDateTime);
 
-        var timelineEvent = Map<String, dynamic>.from(classData);
-        timelineEvent['dateTime'] = startDateTime;
-        timelineEvent['duration'] = duration;
-        timelineEvent['title'] = classData['subjectName'] ?? 'Unknown';
-        return timelineEvent;
-      } catch (e) {
-        return null;
-      }
-    }).where((item) => item != null).toList().cast<Map<String, dynamic>>();
+            var timelineEvent = Map<String, dynamic>.from(classData);
+            timelineEvent['dateTime'] = startDateTime;
+            timelineEvent['duration'] = duration;
+            timelineEvent['title'] = classData['subjectName'] ?? 'Unknown';
+            return timelineEvent;
+          } catch (e) {
+            return null;
+          }
+        })
+        .where((item) => item != null)
+        .toList()
+        .cast<Map<String, dynamic>>();
   }
 
   void _onEventTap(BuildContext context, Map<String, dynamic> event) async {
@@ -64,26 +83,22 @@ class _CalendarOverviewState extends State<CalendarOverview> {
 
     final deviceId = await _deviceIdentifierService.getOrGenerateAppSpecificUuid();
     if (deviceId == null) {
-        // Handle error case where device ID couldn't be retrieved
-        return;
+      // Handle error case where device ID couldn't be retrieved
+      return;
     }
 
     showModalBottomSheet(
       context: context,
-      builder: (_) => ClassDetailsBottomSheet(
-        classData: event,
-        onVerifyAttendance: () {
-          Navigator.of(context).pop();
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => QrScannerScreen(
-                studentIndex: user.studentIndex,
-                deviceId: deviceId,
-              ),
-            ),
-          );
-        },
-      ),
+      builder:
+          (_) => ClassDetailsBottomSheet(
+            classData: event,
+            onVerifyAttendance: () {
+              Navigator.of(context).pop();
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => QrScannerScreen(studentIndex: user.studentIndex, deviceId: deviceId)),
+              );
+            },
+          ),
     );
   }
 
@@ -111,10 +126,7 @@ class _CalendarOverviewState extends State<CalendarOverview> {
           ),
         ),
       ),
-      bottomNavigationBar: CustomBottomNavBar(
-        selectedIndex: _selectedIndex,
-        onTap: _onItemTapped,
-      ),
+      bottomNavigationBar: CustomBottomNavBar(selectedIndex: _selectedIndex, onTap: _onItemTapped),
     );
   }
 }

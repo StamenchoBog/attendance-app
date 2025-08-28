@@ -17,9 +17,7 @@ class Professor extends User {
     required this.title,
     required this.orderingRank,
     this.officeName,
-  }) : super(
-    role: ApiRoles.professorRole
-  );
+  }) : super(role: ApiRoles.professorRole);
 
   factory Professor.fromJson(Map<String, dynamic> json) => _$ProfessorFromJson(json);
 

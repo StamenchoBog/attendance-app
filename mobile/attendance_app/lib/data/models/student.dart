@@ -19,11 +19,7 @@ class Student extends User {
     required this.lastName,
     this.parentName,
     this.studyProgramCode,
-  }) : super(
-    id: studentIndex,
-    name: "$firstName $lastName",
-    role: ApiRoles.studentRole
-  );
+  }) : super(id: studentIndex, name: "$firstName $lastName", role: ApiRoles.studentRole);
 
   factory Student.fromJson(Map<String, dynamic> json) => _$StudentFromJson(json);
 

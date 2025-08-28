@@ -6,22 +6,23 @@ class CustomBottomNavBar extends StatelessWidget {
   final int selectedIndex;
   final Function(int) onTap;
 
-  const CustomBottomNavBar({
-    super.key,
-    required this.selectedIndex,
-    required this.onTap,
-  });
+  const CustomBottomNavBar({super.key, required this.selectedIndex, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return BottomNavigationBar(
       showSelectedLabels: false,
       showUnselectedLabels: false,
-      elevation: 0.0, // Flat look
-      backgroundColor: Colors.white, // Bar background
-      type: BottomNavigationBarType.fixed, // Ensure items are evenly spaced
-      selectedItemColor: ColorPalette.darkBlue, // Selected icon color
-      unselectedItemColor: ColorPalette.iconGrey, // Unselected icon color
+      elevation: 0.0,
+      // Flat look
+      backgroundColor: Colors.white,
+      // Bar background
+      type: BottomNavigationBarType.fixed,
+      // Ensure items are evenly spaced
+      selectedItemColor: ColorPalette.darkBlue,
+      // Selected icon color
+      unselectedItemColor: ColorPalette.iconGrey,
+      // Unselected icon color
       currentIndex: selectedIndex,
       onTap: onTap,
       items: <BottomNavigationBarItem>[

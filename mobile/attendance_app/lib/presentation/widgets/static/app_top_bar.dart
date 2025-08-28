@@ -22,17 +22,13 @@ class AppTopBar extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // 
+        //
         // Leading widget (Logo)
         //
-        leadingWidget ?? 
-          Image(
-            image: const AssetImage('assets/logo/finki_logo.png'),
-            height: 30.h,
-          ),
-          
+        leadingWidget ?? Image(image: const AssetImage('assets/logo/finki_logo.png'), height: 30.h),
+
         SizedBox(width: 15.w),
-        
+
         ///
         /// Search field
         ///
@@ -43,11 +39,7 @@ class AppTopBar extends StatelessWidget {
               hintStyle: TextStyle(fontSize: 14.sp, color: ColorPalette.iconGrey),
               prefixIcon: Padding(
                 padding: EdgeInsets.only(left: 10.w, right: 6.w),
-                child: Icon(
-                  CupertinoIcons.search,
-                  size: 20.sp,
-                  color: ColorPalette.iconGrey,
-                ),
+                child: Icon(CupertinoIcons.search, size: 20.sp, color: ColorPalette.iconGrey),
               ),
               prefixIconConstraints: BoxConstraints(minHeight: 20.h, minWidth: 20.w),
               isDense: true,

@@ -11,16 +11,11 @@ class User {
   final String email;
   final String role;
 
-  const User({
-    required this.id,
-    required this.name, 
-    required this.email,
-    required this.role,
-  });
+  const User({required this.id, required this.name, required this.email, required this.role});
 
   static User fromJson(Map<String, dynamic> json) {
     final role = json['role'];
-    
+
     if (role == 'STUDENT') {
       return Student.fromJson(json);
     } else if (role == 'PROFESSOR') {

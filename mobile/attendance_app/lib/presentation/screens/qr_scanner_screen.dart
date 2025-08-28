@@ -1,4 +1,5 @@
 import 'package:attendance_app/core/services/ble_service.dart';
+import 'package:attendance_app/core/utils/error_message_helper.dart';
 import 'package:attendance_app/data/repositories/attendance_repository.dart';
 import 'package:attendance_app/data/services/service_starter.dart';
 import 'package:flutter/material.dart';
@@ -8,11 +9,7 @@ class QrScannerScreen extends StatefulWidget {
   final String studentIndex;
   final String deviceId;
 
-  const QrScannerScreen({
-    super.key,
-    required this.studentIndex,
-    required this.deviceId,
-  });
+  const QrScannerScreen({super.key, required this.studentIndex, required this.deviceId});
 
   @override
   State<QrScannerScreen> createState() => _QrScannerScreenState();
@@ -36,19 +33,20 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
     return showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: Text(message),
-        actions: [
-          TextButton(
-            child: const Text('OK'),
-            onPressed: () {
-              Navigator.of(context).pop(); // Close dialog
-              Navigator.of(context).pop(); // Go back from scanner
-            },
+      builder:
+          (context) => AlertDialog(
+            title: Text(title),
+            content: Text(message),
+            actions: [
+              TextButton(
+                child: const Text('OK'),
+                onPressed: () {
+                  Navigator.of(context).pop(); // Close dialog
+                  Navigator.of(context).pop(); // Go back from scanner
+                },
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 
@@ -68,6 +66,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
       final attendanceId = await _attendanceRepository.registerAttendance(
         token: qrToken,
         studentIndex: widget.studentIndex,
+        deviceId: widget.deviceId,
       );
 
       setState(() {
@@ -82,15 +81,29 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
       });
 
       // Step 3: Confirm attendance
-      await _attendanceRepository.confirmAttendance(
-        attendanceId: attendanceId,
-        proximity: proximity,
-      );
+      await _attendanceRepository.confirmAttendance(attendanceId: attendanceId, proximity: proximity);
 
       _showResultDialog('Success', 'Attendance verified successfully!');
-
     } catch (e) {
-      _showResultDialog('Error', e.toString());
+      String errorMessage = e.toString();
+
+      // Enhanced error message based on error content
+      if (errorMessage.contains('DEVICE_NOT_REGISTERED')) {
+        errorMessage = ErrorMessageHelper.getAttendanceErrorMessage('DEVICE_NOT_REGISTERED', null);
+      } else if (errorMessage.contains('INVALID_TOKEN') || errorMessage.contains('Invalid attendance token')) {
+        errorMessage = ErrorMessageHelper.getAttendanceErrorMessage('INVALID_TOKEN', null);
+      } else if (errorMessage.contains('TOKEN_EXPIRED') || errorMessage.contains('expired')) {
+        errorMessage = ErrorMessageHelper.getAttendanceErrorMessage('TOKEN_EXPIRED', null);
+      } else if (errorMessage.contains('ATTENDANCE_ALREADY_REGISTERED') ||
+          errorMessage.contains('already registered')) {
+        errorMessage = ErrorMessageHelper.getAttendanceErrorMessage('ATTENDANCE_ALREADY_REGISTERED', null);
+      } else if (errorMessage.contains('not valid') || errorMessage.contains('not enrolled')) {
+        errorMessage = ErrorMessageHelper.getAttendanceErrorMessage('STUDENT_NOT_VALID', null);
+      } else {
+        errorMessage = ErrorMessageHelper.getAttendanceErrorMessage('UNKNOWN', errorMessage);
+      }
+
+      _showResultDialog('Error', errorMessage);
     }
   }
 
@@ -100,10 +113,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
       appBar: AppBar(title: const Text('Scan QR Code')),
       body: Stack(
         children: [
-          MobileScanner(
-            controller: _scannerController,
-            onDetect: _handleDetection,
-          ),
+          MobileScanner(controller: _scannerController, onDetect: _handleDetection),
           if (_isProcessing)
             Container(
               color: Colors.black.withOpacity(0.7),

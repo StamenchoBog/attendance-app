@@ -15,7 +15,7 @@ class ProfileHeaderWidget extends StatelessWidget {
 
   const ProfileHeaderWidget({
     super.key,
-    this.id,      // Placeholder default
+    this.id, // Placeholder default
     this.name,
     this.imageUrl,
   });
@@ -33,25 +33,20 @@ class ProfileHeaderWidget extends StatelessWidget {
     return initials.toUpperCase();
   }
 
-@override
+  @override
   Widget build(BuildContext context) {
     return Consumer<UserProvider>(
       builder: (context, userProvider, child) {
         final user = userProvider.currentUser;
-        
+
         // Use provider data if available, otherwise fall back to parameters
-        final displayName = user != null 
-            ? user.name
-            : name ?? 'Guest User';
-            
-        final displayId = user != null
-            ? (user is Student 
-                ? (user).studentIndex
-                : (user is Professor 
-                    ? (user).title
-                    : 'User'))
-            : id ?? '';
-        
+        final displayName = user != null ? user.name : name ?? 'Guest User';
+
+        final displayId =
+            user != null
+                ? (user is Student ? (user).studentIndex : (user is Professor ? (user).title : 'User'))
+                : id ?? '';
+
         final initials = getInitials(displayName);
 
         return Center(
@@ -61,50 +56,42 @@ class ProfileHeaderWidget extends StatelessWidget {
               CircleAvatar(
                 radius: 55.r,
                 backgroundColor: ColorPalette.lightestBlue,
-                child: imageUrl == null || imageUrl!.isEmpty
-                    ? Text(
-                        initials,
-                        style: TextStyle(
-                          fontSize: 40.sp,
-                          fontWeight: FontWeight.bold,
-                          color: ColorPalette.darkBlue.withOpacity(0.8),
-                        ),
-                      )
-                    : ClipOval(
-                        child: CachedNetworkImage(
-                          imageUrl: imageUrl!,
-                          fit: BoxFit.cover,
-                          width: 110.r,
-                          height: 110.r,
-                          placeholder: (context, url) => const CircularProgressIndicator(),
-                          errorWidget: (context, url, error) => Text(
-                            initials,
-                            style: TextStyle(
-                              fontSize: 40.sp,
-                              fontWeight: FontWeight.bold,
-                              color: ColorPalette.darkBlue.withOpacity(0.8),
-                            ),
+                child:
+                    imageUrl == null || imageUrl!.isEmpty
+                        ? Text(
+                          initials,
+                          style: TextStyle(
+                            fontSize: 40.sp,
+                            fontWeight: FontWeight.bold,
+                            color: ColorPalette.darkBlue.withOpacity(0.8),
+                          ),
+                        )
+                        : ClipOval(
+                          child: CachedNetworkImage(
+                            imageUrl: imageUrl!,
+                            fit: BoxFit.cover,
+                            width: 110.r,
+                            height: 110.r,
+                            placeholder: (context, url) => const CircularProgressIndicator(),
+                            errorWidget:
+                                (context, url, error) => Text(
+                                  initials,
+                                  style: TextStyle(
+                                    fontSize: 40.sp,
+                                    fontWeight: FontWeight.bold,
+                                    color: ColorPalette.darkBlue.withOpacity(0.8),
+                                  ),
+                                ),
                           ),
                         ),
-                      ),
               ),
               SizedBox(height: 15.h),
               Text(
                 displayName,
-                style: TextStyle(
-                  fontSize: 18.sp,
-                  fontWeight: FontWeight.bold,
-                  color: ColorPalette.textPrimary,
-                ),
+                style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold, color: ColorPalette.textPrimary),
               ),
               SizedBox(height: 5.h),
-              Text(
-                displayId,
-                style: TextStyle(
-                  fontSize: 14.sp,
-                  color: ColorPalette.textSecondary,
-                ),
-              ),
+              Text(displayId, style: TextStyle(fontSize: 14.sp, color: ColorPalette.textSecondary)),
             ],
           ),
         );

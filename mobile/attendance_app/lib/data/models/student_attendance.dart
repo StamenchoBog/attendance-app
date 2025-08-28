@@ -39,7 +39,7 @@ class StudentAttendance {
     this.classEndTime,
     this.professorArrivalTime,
     this.studentArrivalTime,
-    this.status
+    this.status,
   });
 
   factory StudentAttendance.fromJson(Map<String, dynamic> json) => _$StudentAttendanceFromJson(json);

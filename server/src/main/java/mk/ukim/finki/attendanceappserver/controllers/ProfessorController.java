@@ -3,7 +3,7 @@ package mk.ukim.finki.attendanceappserver.controllers;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import mk.ukim.finki.attendanceappserver.dto.generic.APIResponse;
-import mk.ukim.finki.attendanceappserver.repositories.models.Professor;
+import mk.ukim.finki.attendanceappserver.domain.models.Professor;
 import mk.ukim.finki.attendanceappserver.services.ProfessorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

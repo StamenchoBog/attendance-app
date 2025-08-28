@@ -46,15 +46,9 @@ String formatTimeOfDayWithPattern(TimeOfDay timeOfDay, String pattern, {DateTime
   // The date part is only relevant if your pattern accidentally includes date placeholders.
   // For time-only patterns, any date will do.
   final DateTime dateToUse = referenceDate ?? DateTime.now();
-  
-  final DateTime dateTime = DateTime(
-    dateToUse.year,
-    dateToUse.month,
-    dateToUse.day,
-    timeOfDay.hour,
-    timeOfDay.minute,
-  );
-  
+
+  final DateTime dateTime = DateTime(dateToUse.year, dateToUse.month, dateToUse.day, timeOfDay.hour, timeOfDay.minute);
+
   final DateFormat formatter = DateFormat(pattern);
   return formatter.format(dateTime);
 }

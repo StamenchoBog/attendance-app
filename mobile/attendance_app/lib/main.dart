@@ -1,4 +1,5 @@
 import 'package:attendance_app/data/providers/date_provider.dart';
+import 'package:attendance_app/data/providers/device_provider.dart';
 import 'package:attendance_app/data/providers/time_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -31,9 +32,10 @@ void main() async {
         ChangeNotifierProvider(create: (_) => UserProvider()),
         ChangeNotifierProvider(create: (_) => DateProvider()),
         ChangeNotifierProvider(create: (_) => TimeProvider()),
+        ChangeNotifierProvider(create: (_) => DeviceProvider()),
       ],
       child: const MyApp(),
-    )
+    ),
   );
 }
 
@@ -49,7 +51,7 @@ class MyApp extends StatelessWidget {
       designSize: const Size(375, 812),
       minTextAdapt: true,
       splitScreenMode: true,
-      builder: (context , child) {
+      builder: (context, child) {
         return MaterialApp(
           title: 'Attendance Verifier',
           // Add localization delegates and supported locales
@@ -58,10 +60,8 @@ class MyApp extends StatelessWidget {
             scaffoldBackgroundColor: Colors.white,
             brightness: Brightness.light,
             pageTransitionsTheme: const PageTransitionsTheme(
-              builders: {
-                TargetPlatform.android: PredictiveBackPageTransitionsBuilder(),
-              }
-            )
+              builders: {TargetPlatform.android: PredictiveBackPageTransitionsBuilder()},
+            ),
           ),
 
           // Screens
@@ -70,9 +70,9 @@ class MyApp extends StatelessWidget {
               if (userProvider.isLoading) {
                 return Scaffold(body: Center(child: CircularProgressIndicator()));
               }
-              
+
               final user = userProvider.currentUser;
-              
+
               if (user == null) {
                 return SignInScreen();
               } else if (user is Student) {
@@ -88,7 +88,7 @@ class MyApp extends StatelessWidget {
             },
           ),
         );
-      }
+      },
     );
   }
 }

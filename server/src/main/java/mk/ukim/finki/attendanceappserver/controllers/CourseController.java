@@ -2,11 +2,10 @@ package mk.ukim.finki.attendanceappserver.controllers;
 
 import lombok.AllArgsConstructor;
 import mk.ukim.finki.attendanceappserver.dto.generic.APIResponse;
-import mk.ukim.finki.attendanceappserver.repositories.models.Course;
+import mk.ukim.finki.attendanceappserver.domain.models.Course;
 import mk.ukim.finki.attendanceappserver.services.CourseService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 

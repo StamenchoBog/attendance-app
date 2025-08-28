@@ -11,8 +11,16 @@ spring:
     username: finki_admin
     password: f1nk1_@dm1n
 
+  # Liquibase configuration for dev environment
   liquibase:
-    change-log: liquibase/db.changelog-master.yaml
+    change-log: classpath:liquibase/db.changelog-master.yaml
+    url: jdbc:postgresql://host.docker.internal:54322/finki-services-db
+    user: finki_admin
+    password: f1nk1_@dm1n
+    enabled: false
+    contexts: dev,test  # Enable both dev and test contexts
+    drop-first: false   # Set to true if you want to drop and recreate schema
+    default-schema: public
 
 # Swagger configuration
 springdoc:
@@ -21,5 +29,8 @@ springdoc:
 
 # Logging
 logging:
+  level:
+    liquibase: INFO
+    liquibase.changelog: INFO
   pattern:
     console: "%d{ISO8601} [%t] %-5level %logger{36} - %msg%n"

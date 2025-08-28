@@ -1,32 +1,25 @@
-import 'dart:convert';
-import 'dart:typed_data';
 import 'package:attendance_app/core/theme/color_palette.dart';
 import 'package:attendance_app/data/models/student_attendance.dart';
 import 'package:attendance_app/data/repositories/attendance_repository.dart';
 import 'package:attendance_app/data/services/service_starter.dart';
+import 'package:attendance_app/core/services/standardized_qr_service.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:logger/logger.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class ProfessorClassDetailsScreen extends StatefulWidget {
   final Map<String, dynamic> classData;
-  
+
   const ProfessorClassDetailsScreen({super.key, required this.classData});
 
   @override
-  State<ProfessorClassDetailsScreen> createState() =>
-      _ProfessorClassDetailsScreenState();
+  State<ProfessorClassDetailsScreen> createState() => _ProfessorClassDetailsScreenState();
 }
 
-class _ProfessorClassDetailsScreenState
-    extends State<ProfessorClassDetailsScreen> {
-  final AttendanceRepository _attendanceRepository =
-      locator<AttendanceRepository>();
+class _ProfessorClassDetailsScreenState extends State<ProfessorClassDetailsScreen> {
+  final AttendanceRepository _attendanceRepository = locator<AttendanceRepository>();
   final Logger _logger = Logger();
   List<StudentAttendance> _attendanceList = [];
   bool _isLoading = true;
@@ -37,7 +30,7 @@ class _ProfessorClassDetailsScreenState
     super.initState();
     _loadAttendance();
   }
- 
+
   Future<void> _loadAttendance() async {
     setState(() {
       _isLoading = true;
@@ -45,8 +38,7 @@ class _ProfessorClassDetailsScreenState
     });
     try {
       final sessionId = int.parse(widget.classData['professorClassSessionId']);
-      final attendance =
-          await _attendanceRepository.getStudentAttendanceForSession(sessionId);
+      final attendance = await _attendanceRepository.getStudentAttendanceForSession(sessionId);
       setState(() {
         _attendanceList = attendance;
         _isLoading = false;
@@ -61,232 +53,682 @@ class _ProfessorClassDetailsScreenState
   }
 
   Future<void> _generateAndShowQrCode() async {
-    final classDateTime = DateTime.parse(widget.classData['date']);
-    final isPastClass = classDateTime.isBefore(DateTime.now().subtract(const Duration(days: 1)));
-
-    if (isPastClass) {
-      final bool? confirmed = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Overwrite Attendance?'),
-          content: const Text('This class has already occurred. Generating a new QR code will reset all existing attendance records for this session to "Pending". Are you sure you want to continue?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('Confirm'),
-            ),
-          ],
-        ),
-      );
-      if (confirmed != true) return;
-    }
-
-    showDialog(
+    // Use the standardized QR service that includes beacon configuration
+    await StandardizedQRService.generateStandardizedQR(
       context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(child: CircularProgressIndicator()),
+      classData: widget.classData,
+      showBeaconModeSelector: true, // Show beacon mode selection dialog
     );
-
-    try {
-      final sessionId = int.parse(widget.classData['professorClassSessionId']);
-      final response = await _attendanceRepository.createPresentationSession(sessionId);
-
-      final qrBytes = base64Decode(response['qrCodeBytes'] as String);
-      final shortKey = response['shortKey'] as String;
-      
-      Navigator.of(context).pop(); // Dismiss loading dialog
-
-      if (mounted) {
-        final presentationUrl = '${dotenv.env['PRESENTATION_URL']}/p/$shortKey';
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            contentPadding: EdgeInsets.all(16.w),
-            title: const Text('Scan or Share Link', textAlign: TextAlign.center),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Image.memory(qrBytes),
-                SizedBox(height: 16.h),
-                Text('Or tap the link to open in a browser:', style: TextStyle(fontSize: 14.sp)),
-                SizedBox(height: 8.h),
-                InkWell(
-                  onTap: () async {
-                    final url = Uri.parse(presentationUrl);
-                    if (await canLaunchUrl(url)) {
-                      await launchUrl(url, mode: LaunchMode.externalApplication);
-                    } else {
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Could not open the link.')),
-                        );
-                      }
-                    }
-                  },
-                  child: Text(
-                    presentationUrl,
-                    style: TextStyle(
-                      fontSize: 16.sp,
-                      fontWeight: FontWeight.bold,
-                      color: ColorPalette.darkBlue,
-                      decoration: TextDecoration.underline,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Close'),
-              ),
-            ],
-          ),
-        );
-      }
-    } catch (e) {
-      Navigator.of(context).pop(); // Dismiss loading dialog
-      _logger.e(e);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to generate QR code.')),
-        );
-      }
-    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFB),
       appBar: AppBar(
-        title: Text(widget.classData['subjectName'] ?? 'Class Details'),
-        backgroundColor: Colors.white,
-        elevation: 1,
+        title: Text(
+          widget.classData['subjectName'] ?? 'Class Details',
+          style: TextStyle(
+            fontSize: 18.sp,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+          ),
+        ),
+        backgroundColor: ColorPalette.darkBlue,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        shadowColor: Colors.transparent,
       ),
-      body: Padding(
-        padding: EdgeInsets.all(16.w),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _buildClassInfoCard(),
-            SizedBox(height: 20.h),
-            ElevatedButton.icon(
-              onPressed: _generateAndShowQrCode,
-              icon: const Icon(CupertinoIcons.qrcode),
-              label: const Text('Generate QR Code'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: ColorPalette.darkBlue,
-                foregroundColor: Colors.white,
-                padding: EdgeInsets.symmetric(vertical: 12.h),
-                textStyle: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold),
-              ),
-            ),
-            SizedBox(height: 20.h),
-            Text(
-              'Student Attendance',
-              style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 10.h),
-            Expanded(
-              child: _buildAttendanceList(),
-            ),
-          ],
+      body: RefreshIndicator(
+        onRefresh: _loadAttendance,
+        color: ColorPalette.darkBlue,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: EdgeInsets.all(20.w),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _buildModernClassInfoCard(),
+              SizedBox(height: 16.h),
+              _buildModernQRButton(),
+              SizedBox(height: 16.h),
+              _buildModernAttendanceOverview(),
+              SizedBox(height: 20.h),
+              _buildModernAttendanceSection(),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildClassInfoCard() {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+  Widget _buildModernClassInfoCard() {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white,
+            Colors.white.withValues(alpha: 0.95),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20.r),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 20,
+            offset: const Offset(0, 4),
+          ),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 40,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
       child: Padding(
-        padding: EdgeInsets.all(16.w),
+        padding: EdgeInsets.all(24.w),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildInfoRow(CupertinoIcons.book_fill, widget.classData['subjectName'] ?? 'N/A'),
-            SizedBox(height: 8.h),
-            _buildInfoRow(CupertinoIcons.location_solid, widget.classData['roomName'] ?? 'N/A'),
-            SizedBox(height: 8.h),
-            _buildInfoRow(CupertinoIcons.time_solid, '${widget.classData['startTime']} - ${widget.classData['endTime']}'),
+            Row(
+              children: [
+                Container(
+                  padding: EdgeInsets.all(12.w),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        ColorPalette.darkBlue,
+                        ColorPalette.darkBlue.withValues(alpha: 0.8),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(12.r),
+                  ),
+                  child: Icon(
+                    CupertinoIcons.book_solid,
+                    color: Colors.white,
+                    size: 20.sp,
+                  ),
+                ),
+                SizedBox(width: 12.w),
+                Expanded(
+                  child: Text(
+                    widget.classData['subjectName'] ?? 'N/A',
+                    style: TextStyle(
+                      fontSize: 20.sp,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF1A1D29),
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 20.h),
+            _buildModernInfoRow(
+              CupertinoIcons.location_solid,
+              'Location',
+              widget.classData['roomName'] ?? 'N/A',
+              Colors.blue,
+            ),
+            SizedBox(height: 12.h),
+            _buildModernInfoRow(
+              CupertinoIcons.time_solid,
+              'Time',
+              '${widget.classData['startTime']} - ${widget.classData['endTime']}',
+              Colors.green,
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildInfoRow(IconData icon, String text) {
+  Widget _buildModernInfoRow(IconData icon, String label, String value, Color accentColor) {
     return Row(
       children: [
-        Icon(icon, color: ColorPalette.darkBlue, size: 20.sp),
+        Container(
+          padding: EdgeInsets.all(8.w),
+          decoration: BoxDecoration(
+            color: accentColor.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8.r),
+          ),
+          child: Icon(
+            icon,
+            color: accentColor,
+            size: 16.sp,
+          ),
+        ),
         SizedBox(width: 12.w),
         Expanded(
-          child: Text(
-            text,
-            style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w500),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12.sp,
+                  fontWeight: FontWeight.w500,
+                  color: const Color(0xFF6B7280),
+                  letterSpacing: 0.5,
+                ),
+              ),
+              SizedBox(height: 2.h),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF1A1D29),
+                ),
+              ),
+            ],
           ),
         ),
       ],
     );
   }
 
-  Widget _buildAttendanceList() {
+  Widget _buildModernQRButton() {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            ColorPalette.darkBlue,
+            ColorPalette.darkBlue.withValues(alpha: 0.8),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20.r),
+        boxShadow: [
+          BoxShadow(
+            color: ColorPalette.darkBlue.withValues(alpha: 0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: _generateAndShowQrCode,
+          borderRadius: BorderRadius.circular(20.r),
+          child: Padding(
+            padding: EdgeInsets.all(24.w),
+            child: Row(
+              children: [
+                Container(
+                  padding: EdgeInsets.all(16.w),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(16.r),
+                  ),
+                  child: Icon(
+                    CupertinoIcons.qrcode,
+                    color: Colors.white,
+                    size: 28.sp,
+                  ),
+                ),
+                SizedBox(width: 20.w),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Generate QR Code',
+                        style: TextStyle(
+                          fontSize: 18.sp,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                      SizedBox(height: 4.h),
+                      Text(
+                        'Start attendance verification process',
+                        style: TextStyle(
+                          fontSize: 14.sp,
+                          color: Colors.white.withValues(alpha: 0.9),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: EdgeInsets.all(8.w),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(12.r),
+                  ),
+                  child: Icon(
+                    CupertinoIcons.arrow_right,
+                    color: Colors.white,
+                    size: 16.sp,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildModernAttendanceOverview() {
+    final presentCount = _attendanceList.length;
+    final totalStudents = 30; // This could be dynamic based on enrolled students
+    final percentage = totalStudents > 0 ? (presentCount / totalStudents * 100).round() : 0;
+
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white,
+            Colors.white.withValues(alpha: 0.95),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20.r),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 20,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(20.w),
+        child: Row(
+          children: [
+            Expanded(
+              child: _buildStatsTile(
+                'Present',
+                presentCount.toString(),
+                CupertinoIcons.person_2_fill,
+                Colors.green,
+              ),
+            ),
+            SizedBox(width: 16.w),
+            Expanded(
+              child: _buildStatsTile(
+                'Attendance',
+                '$percentage%',
+                CupertinoIcons.chart_pie_fill,
+                Colors.blue,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatsTile(String label, String value, IconData icon, Color color) {
+    return Container(
+      padding: EdgeInsets.all(16.w),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(
+          color: color.withValues(alpha: 0.1),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: EdgeInsets.all(10.w),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12.r),
+            ),
+            child: Icon(
+              icon,
+              color: color,
+              size: 20.sp,
+            ),
+          ),
+          SizedBox(height: 12.h),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 24.sp,
+              fontWeight: FontWeight.w800,
+              color: const Color(0xFF1A1D29),
+              letterSpacing: -1,
+            ),
+          ),
+          SizedBox(height: 4.h),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12.sp,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF6B7280),
+              letterSpacing: 0.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildModernAttendanceSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Student Attendance',
+          style: TextStyle(
+            fontSize: 20.sp,
+            fontWeight: FontWeight.w700,
+            color: const Color(0xFF1A1D29),
+            letterSpacing: -0.5,
+          ),
+        ),
+        SizedBox(height: 16.h),
+        _buildModernAttendanceList(),
+      ],
+    );
+  }
+
+  Widget _buildModernAttendanceList() {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return Container(
+        padding: EdgeInsets.all(40.w),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20.r),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 20,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Center(
+          child: Column(
+            children: [
+              Container(
+                padding: EdgeInsets.all(16.w),
+                decoration: BoxDecoration(
+                  color: ColorPalette.darkBlue.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(16.r),
+                ),
+                child: CircularProgressIndicator(
+                  color: ColorPalette.darkBlue,
+                  strokeWidth: 3,
+                ),
+              ),
+              SizedBox(height: 20.h),
+              Text(
+                'Loading attendance...',
+                style: TextStyle(
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF6B7280),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
     }
 
     if (_errorMessage != null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(_errorMessage!),
-            SizedBox(height: 10.h),
-            ElevatedButton(
-              onPressed: _loadAttendance,
-              child: const Text('Retry'),
-            )
+      return Container(
+        padding: EdgeInsets.all(32.w),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20.r),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 20,
+              offset: const Offset(0, 4),
+            ),
           ],
+        ),
+        child: Center(
+          child: Column(
+            children: [
+              Container(
+                padding: EdgeInsets.all(16.w),
+                decoration: BoxDecoration(
+                  color: Colors.red.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(16.r),
+                ),
+                child: Icon(
+                  CupertinoIcons.exclamationmark_triangle_fill,
+                  color: Colors.red,
+                  size: 32.sp,
+                ),
+              ),
+              SizedBox(height: 20.h),
+              Text(
+                _errorMessage!,
+                style: TextStyle(
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF6B7280),
+                ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: 24.h),
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [ColorPalette.darkBlue, ColorPalette.darkBlue.withValues(alpha: 0.8)],
+                  ),
+                  borderRadius: BorderRadius.circular(12.r),
+                ),
+                child: ElevatedButton(
+                  onPressed: _loadAttendance,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                    padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+                  ),
+                  child: Text(
+                    'Retry',
+                    style: TextStyle(
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       );
     }
 
     if (_attendanceList.isEmpty) {
-      return const Center(child: Text('No students have checked in yet.'));
+      return Container(
+        padding: EdgeInsets.all(40.w),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20.r),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 20,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Center(
+          child: Column(
+            children: [
+              Container(
+                padding: EdgeInsets.all(20.w),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF6B7280).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(20.r),
+                ),
+                child: Icon(
+                  CupertinoIcons.person_2,
+                  color: const Color(0xFF6B7280),
+                  size: 48.sp,
+                ),
+              ),
+              SizedBox(height: 24.h),
+              Text(
+                'No students yet',
+                style: TextStyle(
+                  fontSize: 20.sp,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF1A1D29),
+                  letterSpacing: -0.5,
+                ),
+              ),
+              SizedBox(height: 8.h),
+              Text(
+                'Students will appear here after scanning the QR code',
+                style: TextStyle(
+                  fontSize: 14.sp,
+                  color: const Color(0xFF6B7280),
+                  fontWeight: FontWeight.w500,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
     }
 
-    return ListView.builder(
-      itemCount: _attendanceList.length,
-      itemBuilder: (context, index) {
-        final attendance = _attendanceList[index];
-        return Card(
-          margin: EdgeInsets.symmetric(vertical: 4.h),
-          child: ListTile(
-            leading: CircleAvatar(
-              backgroundColor: _getStatusColor(attendance.status.toString()),
-              child: Icon(_getStatusIcon(attendance.status.toString()), color: Colors.white),
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20.r),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 20,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ListView.separated(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        padding: EdgeInsets.all(16.w),
+        itemCount: _attendanceList.length,
+        separatorBuilder: (context, index) => Divider(
+          height: 1,
+          color: const Color(0xFFF3F4F6),
+          indent: 60.w,
+        ),
+        itemBuilder: (context, index) {
+          final attendance = _attendanceList[index];
+          return _buildModernStudentTile(attendance);
+        },
+      ),
+    );
+  }
+
+  Widget _buildModernStudentTile(StudentAttendance attendance) {
+    final statusColor = _getStatusColor(attendance.status ?? 'unknown');
+    final statusIcon = _getStatusIcon(attendance.status ?? 'unknown');
+
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 12.h),
+      child: Row(
+        children: [
+          Container(
+            width: 44.w,
+            height: 44.w,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  statusColor,
+                  statusColor.withValues(alpha: 0.8),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(14.r),
             ),
-            title: Text(attendance.studentName ?? 'Unknown Student'),
-            subtitle: Text(
-              '${attendance.studentIndex} - ${attendance.studyProgramCode}\nArrival: ${DateFormat('HH:mm:ss').format(attendance.studentArrivalTime!)}',
+            child: Icon(
+              statusIcon,
+              color: Colors.white,
+              size: 20.sp,
             ),
           ),
-        );
-      },
+          SizedBox(width: 16.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  attendance.studentName ?? 'Unknown Student',
+                  style: TextStyle(
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF1A1D29),
+                  ),
+                ),
+                SizedBox(height: 4.h),
+                Text(
+                  attendance.studentIndex ?? 'No index',
+                  style: TextStyle(
+                    fontSize: 13.sp,
+                    color: const Color(0xFF6B7280),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8.r),
+                ),
+                child: Text(
+                  _getStatusText(attendance.status ?? 'unknown'),
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.w600,
+                    color: statusColor,
+                  ),
+                ),
+              ),
+              SizedBox(height: 4.h),
+              if (attendance.studentArrivalTime != null)
+                Text(
+                  DateFormat('HH:mm').format(attendance.studentArrivalTime!),
+                  style: TextStyle(
+                    fontSize: 11.sp,
+                    color: const Color(0xFF9CA3AF),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
   Color _getStatusColor(String status) {
-    switch (status) {
-      case 'PRESENT':
+    switch (status.toLowerCase()) {
+      case 'present':
         return Colors.green;
-      case 'ABSENT':
+      case 'late':
+        return Colors.orange;
+      case 'absent':
         return Colors.red;
       default:
         return Colors.grey;
@@ -294,13 +736,28 @@ class _ProfessorClassDetailsScreenState
   }
 
   IconData _getStatusIcon(String status) {
-    switch (status) {
-      case 'PRESENT':
-        return CupertinoIcons.check_mark;
-      case 'ABSENT':
-        return CupertinoIcons.xmark;
+    switch (status.toLowerCase()) {
+      case 'present':
+        return CupertinoIcons.checkmark_circle_fill;
+      case 'late':
+        return CupertinoIcons.clock_fill;
+      case 'absent':
+        return CupertinoIcons.xmark_circle_fill;
       default:
-        return CupertinoIcons.question;
+        return CupertinoIcons.person_fill;
+    }
+  }
+
+  String _getStatusText(String status) {
+    switch (status.toLowerCase()) {
+      case 'present':
+        return 'Present';
+      case 'late':
+        return 'Late';
+      case 'absent':
+        return 'Absent';
+      default:
+        return 'Unknown';
     }
   }
 }

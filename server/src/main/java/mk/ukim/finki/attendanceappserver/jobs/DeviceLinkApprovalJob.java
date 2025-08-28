@@ -4,12 +4,11 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import mk.ukim.finki.attendanceappserver.config.DeviceLinkProperties;
 import mk.ukim.finki.attendanceappserver.domain.enums.DeviceLinkStatus;
-import mk.ukim.finki.attendanceappserver.repositories.DeviceLinkRequestRepository;
+import mk.ukim.finki.attendanceappserver.domain.repositories.DeviceLinkRequestRepository;
 import mk.ukim.finki.attendanceappserver.services.DeviceManagementService;
 import mk.ukim.finki.attendanceappserver.services.EmailService;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
 

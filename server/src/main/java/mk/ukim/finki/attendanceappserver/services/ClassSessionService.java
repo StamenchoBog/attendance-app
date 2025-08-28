@@ -4,7 +4,7 @@ import lombok.AllArgsConstructor;
 import mk.ukim.finki.attendanceappserver.dto.ProfessorClassSessionFilterDTO;
 import mk.ukim.finki.attendanceappserver.dto.db.ClassSessionOverview;
 import mk.ukim.finki.attendanceappserver.dto.db.ProfessorClassSession;
-import mk.ukim.finki.attendanceappserver.repositories.ClassSessionRepository;
+import mk.ukim.finki.attendanceappserver.domain.repositories.ClassSessionRepository;
 import mk.ukim.finki.attendanceappserver.util.DateUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

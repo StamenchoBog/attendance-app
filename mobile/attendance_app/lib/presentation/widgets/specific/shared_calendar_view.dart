@@ -37,7 +37,7 @@ class _SharedCalendarViewState extends State<SharedCalendarView> {
   DateTime _currentTime = DateTime.now();
   String? _errorMessage;
   bool _isLoading = true;
-  
+
   List<Map<String, dynamic>> _allClasses = [];
   List<Map<String, dynamic>> _filteredClasses = [];
   String _searchQuery = '';
@@ -119,13 +119,13 @@ class _SharedCalendarViewState extends State<SharedCalendarView> {
     }
 
     final lowerCaseQuery = _searchQuery.toLowerCase();
-    final filtered = _allClasses.where((classData) {
-      final subjectName = (classData['title'] as String? ?? '').toLowerCase();
-      final roomName = (classData['roomName'] as String? ?? '').toLowerCase();
-      
-      return subjectName.contains(lowerCaseQuery) ||
-             roomName.contains(lowerCaseQuery);
-    }).toList();
+    final filtered =
+        _allClasses.where((classData) {
+          final subjectName = (classData['title'] as String? ?? '').toLowerCase();
+          final roomName = (classData['roomName'] as String? ?? '').toLowerCase();
+
+          return subjectName.contains(lowerCaseQuery) || roomName.contains(lowerCaseQuery);
+        }).toList();
 
     setState(() {
       _filteredClasses = filtered;
@@ -183,13 +183,13 @@ class _SharedCalendarViewState extends State<SharedCalendarView> {
       children: [
         SizedBox(height: 15.h),
         AppTopBar(
-          searchHintText: widget.appBarSearchHint, 
+          searchHintText: widget.appBarSearchHint,
           onSearchChanged: (value) {
             setState(() {
               _searchQuery = value;
               _filterClasses();
             });
-          }
+          },
         ),
         SizedBox(height: 20.h),
         Row(
@@ -199,10 +199,7 @@ class _SharedCalendarViewState extends State<SharedCalendarView> {
               style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold, color: ColorPalette.textPrimary),
             ),
             const Spacer(),
-            OutlinedButton(
-              onPressed: () => dateState.updateDate(DateTime.now()),
-              child: const Text('Today'),
-            ),
+            OutlinedButton(onPressed: () => dateState.updateDate(DateTime.now()), child: const Text('Today')),
             SizedBox(width: 8.w),
             IconButton(
               onPressed: () => _showMonthPicker(context, dateState),
@@ -211,62 +208,57 @@ class _SharedCalendarViewState extends State<SharedCalendarView> {
           ],
         ),
         SizedBox(height: 10.h),
-        HorizontalDayScroller(
-          selectedDate: selectedDate,
-          onDateSelected: (date) => dateState.updateDate(date),
-        ),
+        HorizontalDayScroller(selectedDate: selectedDate, onDateSelected: (date) => dateState.updateDate(date)),
         SizedBox(height: 10.h),
         Expanded(
-          child: _isLoading
-              ? const TimelineSkeleton()
-              : _errorMessage != null
+          child:
+              _isLoading
+                  ? const TimelineSkeleton()
+                  : _errorMessage != null
                   ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(_errorMessage!),
-                          ElevatedButton(
-                            onPressed: () => _loadClassSessions(selectedDate),
-                            child: const Text('Retry'),
-                          )
-                        ],
-                      ),
-                    )
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(_errorMessage!),
+                        ElevatedButton(onPressed: () => _loadClassSessions(selectedDate), child: const Text('Retry')),
+                      ],
+                    ),
+                  )
                   : _filteredClasses.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                _searchQuery.isEmpty ? CupertinoIcons.calendar_badge_minus : CupertinoIcons.search_circle, 
-                                size: 50.sp, 
-                                color: ColorPalette.iconGrey
-                              ),
-                              SizedBox(height: 16.h),
-                              Text(
-                                _searchQuery.isEmpty
-                                  ? 'No classes scheduled for this date.'
-                                  : 'No classes found for "$_searchQuery".'
-                              ),
-                            ],
-                          ),
-                        )
-                      : SingleChildScrollView(
-                          child: Stack(
-                            children: [
-                              TimelineView(
-                                events: _filteredClasses,
-                                startHour: _startHour,
-                                endHour: 21,
-                                hourHeight: _hourHeight,
-                                timelineLeftPadding: _timelineLeftPadding,
-                                userRole: widget.userRole,
-                                onEventTap: (event) => widget.onEventTap(context, event),
-                              ),
-                              if (_isToday(selectedDate)) _buildCurrentTimeIndicator(),
-                            ],
-                          ),
+                  ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          _searchQuery.isEmpty ? CupertinoIcons.calendar_badge_minus : CupertinoIcons.search_circle,
+                          size: 50.sp,
+                          color: ColorPalette.iconGrey,
                         ),
+                        SizedBox(height: 16.h),
+                        Text(
+                          _searchQuery.isEmpty
+                              ? 'No classes scheduled for this date.'
+                              : 'No classes found for "$_searchQuery".',
+                        ),
+                      ],
+                    ),
+                  )
+                  : SingleChildScrollView(
+                    child: Stack(
+                      children: [
+                        TimelineView(
+                          events: _filteredClasses,
+                          startHour: _startHour,
+                          endHour: 21,
+                          hourHeight: _hourHeight,
+                          timelineLeftPadding: _timelineLeftPadding,
+                          userRole: widget.userRole,
+                          onEventTap: (event) => widget.onEventTap(context, event),
+                        ),
+                        if (_isToday(selectedDate)) _buildCurrentTimeIndicator(),
+                      ],
+                    ),
+                  ),
         ),
         SizedBox(height: 15.h),
       ],

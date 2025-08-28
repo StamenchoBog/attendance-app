@@ -2,8 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:attendance_app/core/theme/color_palette.dart';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:attendance_app/core/utils/notification_helper.dart';
+import 'package:attendance_app/data/repositories/report_repository.dart';
+import 'package:attendance_app/data/services/service_starter.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:device_info_plus/device_info_plus.dart';
+import 'dart:io';
 
 // Widgets
 import 'package:attendance_app/presentation/widgets/specific/profile_header_widget.dart';
@@ -40,112 +44,92 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
     super.dispose();
   }
 
-  // Placeholder for submit action
+  // Submit report using proper repository
   Future<void> _submitReport() async {
-  // 1. Prevent multiple submissions
-  if (_isSubmitting) return;
+    // 1. Prevent multiple submissions
+    if (_isSubmitting) return;
 
-  // 2. Validate form
-  if (!(_formKey.currentState?.validate() ?? false)) {
-    print('Form validation failed');
-    return; // Stop if validation fails
-  }
-  if (_selectedCategory == null) {
-    if (mounted) { // Check if widget is still in the tree
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please select a category.'), backgroundColor: Colors.orange),
-        );
+    // 2. Validate form
+    if (!(_formKey.currentState?.validate() ?? false)) {
+      return;
     }
-      return; // Stop if category not selected
-  }
+    if (_selectedCategory == null) {
+      if (mounted) {
+        NotificationHelper.showWarning(context, 'Please select a category before submitting the report.');
+      }
+      return;
+    }
 
-  // 3. Set submitting state and disable button
-  setState(() { _isSubmitting = true; });
+    // 3. Set submitting state
+    setState(() {
+      _isSubmitting = true;
+    });
 
-  // 4. Prepare data and make API call
-  // TODO: Replace with your actual API endpoint
-  final url = Uri.parse('https://your-backend-api.com/api/v1/report-problem');
-  final headers = {
-    'Content-Type': 'application/json; charset=UTF-8',
-    // TODO: Add Authorization header if needed
-    // 'Authorization': 'Bearer YOUR_AUTH_TOKEN',
-  };
+    try {
+      // 4. Get device and app info
+      final packageInfo = await PackageInfo.fromPlatform();
+      final deviceInfo = DeviceInfoPlugin();
+      String deviceInfoString = 'Unknown Device';
 
-  // TODO: Get actual User ID, App Version, Device Info dynamically
-  // You might use packages like package_info_plus, device_info_plus
-  final String id = "user_123";
-  final String name = "User 1234";
-  final String appVersionPlaceholder = "1.0.0";
-  final String deviceInfoPlaceholder = "Mock Device";
+      if (Platform.isAndroid) {
+        final androidInfo = await deviceInfo.androidInfo;
+        deviceInfoString = '${androidInfo.brand} ${androidInfo.model} (Android ${androidInfo.version.release})';
+      } else if (Platform.isIOS) {
+        final iosInfo = await deviceInfo.iosInfo;
+        deviceInfoString = '${iosInfo.name} ${iosInfo.model} (iOS ${iosInfo.systemVersion})';
+      }
 
-  final body = jsonEncode({
-    'userId': id,
-    'name': name,
-    'category': _selectedCategory!,
-    'title': _titleController.text.trim(),
-    'description': _descriptionController.text.trim(),
-    'appVersion': appVersionPlaceholder,
-    'deviceInfo': deviceInfoPlaceholder,
-    'timestamp': DateTime.now().toIso8601String(), // Include timestamp
-  });
+      // 5. Submit report using repository
+      final reportRepository = locator<ReportRepository>();
+      final reportId = await reportRepository.submitReport(
+        reportType: _selectedCategory!,
+        priority: 'medium',
+        // Default priority
+        title: _titleController.text.trim(),
+        description: _descriptionController.text.trim(),
+        deviceInfo: deviceInfoString,
+        userInfo: 'App Version: ${packageInfo.version} (${packageInfo.buildNumber})',
+      );
 
-  try {
-    print("Sending report to API...");
-    print("URL: $url");
-    print("Headers: $headers");
-    print("Body: $body");
-
-    final response = await http.post(url, headers: headers, body: body)
-                      .timeout(const Duration(seconds: 15)); // Add timeout
-
-    print("API Response Status Code: ${response.statusCode}");
-    // print("API Response Body: ${response.body}"); // Uncomment for debugging
-
-    // 5. Handle response
-    if (mounted) { // Check if widget is still mounted before showing SnackBar
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        // Success
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Report submitted successfully!'), backgroundColor: Colors.green),
+      if (mounted) {
+        // Success notification - this will be expandable due to the length
+        NotificationHelper.showSuccess(
+          context,
+          'Your report has been successfully submitted! Thank you for helping us improve the app. Your report ID is: $reportId. We will review your submission and get back to you if additional information is needed. You can reference this ID when contacting support.',
+          duration: const Duration(seconds: 6),
+          expandable: true,
         );
-        // Optionally clear form and navigate back after success
+
+        // Clear form and navigate back
         _titleController.clear();
         _descriptionController.clear();
-        setState(() { _selectedCategory = null; });
-          // Wait a bit before popping
-        await Future.delayed(const Duration(seconds: 1));
-        if(mounted) Navigator.of(context).pop();
+        setState(() {
+          _selectedCategory = null;
+        });
 
-      } else {
-        // Failure - Show error based on status code or response body
-          String errorMessage = 'Failed to submit report. Server error: ${response.statusCode}.';
-          try {
-            // Try to parse error message from backend if available
-            final responseData = jsonDecode(response.body);
-            errorMessage = responseData['message'] ?? errorMessage;
-          } catch (e) { /* Ignore parsing errors */ }
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorMessage), backgroundColor: Colors.red),
+        // Wait a bit before popping
+        await Future.delayed(const Duration(seconds: 2));
+        if (mounted) Navigator.of(context).pop();
+      }
+    } catch (e) {
+      if (mounted) {
+        // Error notification - this will also be expandable due to length
+        NotificationHelper.showError(
+          context,
+          'Failed to submit your report. Please check your internet connection and try again. If the problem persists, you can contact support directly. Error details: ${e.toString()}',
+          duration: const Duration(seconds: 8),
+          expandable: true,
         );
       }
-    }
-
-  } catch (e) {
-    // Handle network errors, timeouts, etc.
-    print("Error submitting report: $e");
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to submit report. Check connection: $e'), backgroundColor: Colors.red),
-      );
-    }
-  } finally {
-    // 6. Reset submitting state regardless of success/failure
-    if (mounted) {
-        setState(() { _isSubmitting = false; });
+    } finally {
+      // 6. Reset submitting state
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
     }
   }
-}
 
   @override
   Widget build(BuildContext context) {
@@ -154,7 +138,7 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
       appBar: AppBar(
         title: Text(
           'Report a Problem', // Specific title
-          style: TextStyle( color: ColorPalette.textPrimary, fontWeight: FontWeight.w600, fontSize: 18.sp,),
+          style: TextStyle(color: ColorPalette.textPrimary, fontWeight: FontWeight.w600, fontSize: 18.sp),
         ),
         centerTitle: true,
         backgroundColor: Colors.white,
@@ -181,12 +165,9 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
                 padding: EdgeInsets.only(bottom: 15.h, top: 10.h), // Adjusted padding
                 child: Row(
                   children: [
-                    Text(
-                      'Report a problem',
-                      style: TextStyle( fontSize: 15.sp, color: ColorPalette.textPrimary,),
-                    ),
+                    Text('Report a problem', style: TextStyle(fontSize: 15.sp, color: ColorPalette.textPrimary)),
                     const Spacer(),
-                    Icon( CupertinoIcons.chevron_down, size: 20.sp, color: ColorPalette.iconGrey.withValues(alpha: 0.8),),
+                    Icon(CupertinoIcons.chevron_down, size: 20.sp, color: ColorPalette.iconGrey.withValues(alpha: 0.8)),
                   ],
                 ),
               ),
@@ -196,24 +177,44 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
               SizedBox(height: 15.h),
 
               // --- Category Dropdown ---
-              Text( 'Category', style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w500, color: ColorPalette.textPrimary),),
+              Text(
+                'Category',
+                style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w500, color: ColorPalette.textPrimary),
+              ),
               SizedBox(height: 8.h),
               DropdownButtonFormField<String>(
-                value: _selectedCategory,
-                items: _problemCategories.map((String category) {
-                  return DropdownMenuItem<String>( value: category, child: Text(category, style: TextStyle(fontSize: 14.sp)),);
-                }).toList(),
+                initialValue: _selectedCategory,
+                items:
+                    _problemCategories.map((String category) {
+                      return DropdownMenuItem<String>(
+                        value: category,
+                        child: Text(category, style: TextStyle(fontSize: 14.sp)),
+                      );
+                    }).toList(),
                 onChanged: (String? newValue) {
-                  setState(() { _selectedCategory = newValue; });
+                  setState(() {
+                    _selectedCategory = newValue;
+                  });
                 },
                 decoration: InputDecoration(
                   hintText: 'Select category',
                   hintStyle: TextStyle(fontSize: 14.sp, color: ColorPalette.iconGrey),
-                  filled: true, fillColor: Colors.white, // White background for dropdown
+                  filled: true,
+                  fillColor: Colors.white,
+                  // White background for dropdown
                   contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
-                  border: OutlineInputBorder( borderRadius: BorderRadius.circular(10.r), borderSide: BorderSide(color: ColorPalette.placeholderGrey),),
-                  enabledBorder: OutlineInputBorder( borderRadius: BorderRadius.circular(10.r), borderSide: BorderSide(color: ColorPalette.placeholderGrey),),
-                  focusedBorder: OutlineInputBorder( borderRadius: BorderRadius.circular(10.r), borderSide: BorderSide(color: ColorPalette.darkBlue, width: 1.5.w),),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10.r),
+                    borderSide: BorderSide(color: ColorPalette.placeholderGrey),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10.r),
+                    borderSide: BorderSide(color: ColorPalette.placeholderGrey),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10.r),
+                    borderSide: BorderSide(color: ColorPalette.darkBlue, width: 1.5.w),
+                  ),
                 ),
                 validator: (value) => value == null ? 'Please select a category' : null,
               ),
@@ -221,18 +222,31 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
               SizedBox(height: 20.h),
 
               // --- Title Field ---
-              Text( 'Title', style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w500, color: ColorPalette.textPrimary),),
+              Text(
+                'Title',
+                style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w500, color: ColorPalette.textPrimary),
+              ),
               SizedBox(height: 8.h),
               TextFormField(
                 controller: _titleController,
                 decoration: InputDecoration(
                   hintText: 'Enter a brief title for the problem',
                   hintStyle: TextStyle(fontSize: 14.sp, color: ColorPalette.iconGrey),
-                  filled: true, fillColor: Colors.white,
+                  filled: true,
+                  fillColor: Colors.white,
                   contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
-                  border: OutlineInputBorder( borderRadius: BorderRadius.circular(10.r), borderSide: BorderSide(color: ColorPalette.placeholderGrey),),
-                  enabledBorder: OutlineInputBorder( borderRadius: BorderRadius.circular(10.r), borderSide: BorderSide(color: ColorPalette.placeholderGrey),),
-                  focusedBorder: OutlineInputBorder( borderRadius: BorderRadius.circular(10.r), borderSide: BorderSide(color: ColorPalette.darkBlue, width: 1.5.w),),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10.r),
+                    borderSide: BorderSide(color: ColorPalette.placeholderGrey),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10.r),
+                    borderSide: BorderSide(color: ColorPalette.placeholderGrey),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10.r),
+                    borderSide: BorderSide(color: ColorPalette.darkBlue, width: 1.5.w),
+                  ),
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -245,18 +259,31 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
               SizedBox(height: 20.h),
 
               // --- Description Field ---
-              Text( 'Description', style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w500, color: ColorPalette.textPrimary),),
+              Text(
+                'Description',
+                style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w500, color: ColorPalette.textPrimary),
+              ),
               SizedBox(height: 8.h),
               TextFormField(
                 controller: _descriptionController,
                 decoration: InputDecoration(
                   hintText: 'Please describe the problem in detail...',
                   hintStyle: TextStyle(fontSize: 14.sp, color: ColorPalette.iconGrey),
-                  filled: true, fillColor: Colors.white,
+                  filled: true,
+                  fillColor: Colors.white,
                   contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
-                  border: OutlineInputBorder( borderRadius: BorderRadius.circular(10.r), borderSide: BorderSide(color: ColorPalette.placeholderGrey),),
-                  enabledBorder: OutlineInputBorder( borderRadius: BorderRadius.circular(10.r), borderSide: BorderSide(color: ColorPalette.placeholderGrey),),
-                  focusedBorder: OutlineInputBorder( borderRadius: BorderRadius.circular(10.r), borderSide: BorderSide(color: ColorPalette.darkBlue, width: 1.5.w),),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10.r),
+                    borderSide: BorderSide(color: ColorPalette.placeholderGrey),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10.r),
+                    borderSide: BorderSide(color: ColorPalette.placeholderGrey),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10.r),
+                    borderSide: BorderSide(color: ColorPalette.darkBlue, width: 1.5.w),
+                  ),
                 ),
                 maxLines: 5,
                 minLines: 3,
@@ -280,16 +307,19 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
                   backgroundColor: ColorPalette.darkBlue,
                   foregroundColor: Colors.white,
                   minimumSize: Size(double.infinity, 50.h),
-                  shape: RoundedRectangleBorder( borderRadius: BorderRadius.circular(12.r),),
-                  textStyle: TextStyle( fontSize: 16.sp, fontWeight: FontWeight.w600,),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+                  textStyle: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600),
                 ),
                 onPressed: _isSubmitting ? null : _submitReport,
-                child: _isSubmitting
-                       ? SizedBox( // Show progress indicator when submitting
-                          width: 20.w, height: 20.w,
-                          child: const CircularProgressIndicator(strokeWidth: 2, color: Colors.white,)
+                child:
+                    _isSubmitting
+                        ? SizedBox(
+                          // Show progress indicator when submitting
+                          width: 20.w,
+                          height: 20.w,
+                          child: const CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                         )
-                      : const Text('Submit Report'),
+                        : const Text('Submit Report'),
               ),
 
               SizedBox(height: 20.h),

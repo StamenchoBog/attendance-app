@@ -7,11 +7,7 @@ class HorizontalDayScroller extends StatefulWidget {
   final DateTime selectedDate;
   final Function(DateTime) onDateSelected;
 
-  const HorizontalDayScroller({
-    super.key,
-    required this.selectedDate,
-    required this.onDateSelected,
-  });
+  const HorizontalDayScroller({super.key, required this.selectedDate, required this.onDateSelected});
 
   @override
   State<HorizontalDayScroller> createState() => _HorizontalDayScrollerState();
@@ -72,12 +68,12 @@ class _HorizontalDayScrollerState extends State<HorizontalDayScroller> {
         itemCount: 60, // Show 60 days
         itemBuilder: (context, index) {
           final date = _firstDay.add(Duration(days: index));
-          final isSelected = date.year == widget.selectedDate.year &&
-                             date.month == widget.selectedDate.month &&
-                             date.day == widget.selectedDate.day;
-          final isToday = date.year == DateTime.now().year &&
-                          date.month == DateTime.now().month &&
-                          date.day == DateTime.now().day;
+          final isSelected =
+              date.year == widget.selectedDate.year &&
+              date.month == widget.selectedDate.month &&
+              date.day == widget.selectedDate.day;
+          final isToday =
+              date.year == DateTime.now().year && date.month == DateTime.now().month && date.day == DateTime.now().day;
 
           final bool showMonth;
           if (index == 0) {
@@ -134,7 +130,8 @@ class _HorizontalDayScrollerState extends State<HorizontalDayScroller> {
                         style: TextStyle(
                           fontSize: 16.sp,
                           fontWeight: FontWeight.bold,
-                          color: isSelected ? Colors.white : (isToday ? ColorPalette.darkBlue : ColorPalette.textPrimary),
+                          color:
+                              isSelected ? Colors.white : (isToday ? ColorPalette.darkBlue : ColorPalette.textPrimary),
                         ),
                       ),
                     ],

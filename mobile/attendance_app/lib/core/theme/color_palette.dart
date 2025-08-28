@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 class ColorPalette {
-
   static const Color lightestBlue = Color(0xFFEAF2FF);
   static const Color lightBlue = Color(0xFFB4DBFF);
   static const Color darkBlue = Color(0xFF006FFD);

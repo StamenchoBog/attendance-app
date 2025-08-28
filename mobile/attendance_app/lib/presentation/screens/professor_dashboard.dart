@@ -5,12 +5,14 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 import 'package:attendance_app/core/theme/color_palette.dart';
 import 'package:provider/provider.dart';
+
 // Widgets
 import 'package:attendance_app/presentation/widgets/static/app_top_bar.dart';
 import 'package:attendance_app/presentation/widgets/static/bottom_nav_bar.dart';
 import 'package:attendance_app/presentation/widgets/specific/main_dashboard_widgets.dart';
 import 'package:attendance_app/presentation/screens/professor_class_details_screen.dart';
 import 'package:attendance_app/presentation/widgets/static/helpers/navigation_helpers.dart';
+import 'package:attendance_app/core/utils/page_transitions.dart';
 import 'package:logger/logger.dart';
 
 import '../../data/models/professor.dart';
@@ -83,7 +85,7 @@ class _ProfessorDashboardState extends State<ProfessorDashboard> {
       final subjects = await _subjectRepository.getSubjectsByProfessorId(user.id);
       final rooms = await _roomRepository.getRooms();
       final classes = await _classSessionRepository.getProfessorClassSessions(user.id, _dateProvider!.selectedDate);
-      
+
       if (!mounted) return;
       setState(() {
         _subjects = subjects.toSet().toList();
@@ -118,11 +120,12 @@ class _ProfessorDashboardState extends State<ProfessorDashboard> {
     // Then filter by search query
     if (_searchQuery.isNotEmpty) {
       final lowerCaseQuery = _searchQuery.toLowerCase();
-      filtered = filtered.where((classData) {
-        final subjectName = (classData['subjectName'] as String? ?? '').toLowerCase();
-        final roomName = (classData['roomName'] as String? ?? '').toLowerCase();
-        return subjectName.contains(lowerCaseQuery) || roomName.contains(lowerCaseQuery);
-      }).toList();
+      filtered =
+          filtered.where((classData) {
+            final subjectName = (classData['subjectName'] as String? ?? '').toLowerCase();
+            final roomName = (classData['roomName'] as String? ?? '').toLowerCase();
+            return subjectName.contains(lowerCaseQuery) || roomName.contains(lowerCaseQuery);
+          }).toList();
     }
 
     setState(() {
@@ -201,12 +204,13 @@ class _ProfessorDashboardState extends State<ProfessorDashboard> {
                         });
                         _filterClasses();
                       },
-                      items: _subjects.map<DropdownMenuItem<Subject>>((Subject subject) {
-                        return DropdownMenuItem<Subject>(
-                          value: subject,
-                          child: Text(subject.name, overflow: TextOverflow.ellipsis),
-                        );
-                      }).toList(),
+                      items:
+                          _subjects.map<DropdownMenuItem<Subject>>((Subject subject) {
+                            return DropdownMenuItem<Subject>(
+                              value: subject,
+                              child: Text(subject.name, overflow: TextOverflow.ellipsis),
+                            );
+                          }).toList(),
                     ),
                   ),
                   SizedBox(width: 10.w),
@@ -221,114 +225,109 @@ class _ProfessorDashboardState extends State<ProfessorDashboard> {
                         });
                         _filterClasses();
                       },
-                      items: _rooms.map<DropdownMenuItem<Room>>((Room room) {
-                        return DropdownMenuItem<Room>(
-                          value: room,
-                          child: Text(room.name, overflow: TextOverflow.ellipsis),
-                        );
-                      }).toList(),
+                      items:
+                          _rooms.map<DropdownMenuItem<Room>>((Room room) {
+                            return DropdownMenuItem<Room>(
+                              value: room,
+                              child: Text(room.name, overflow: TextOverflow.ellipsis),
+                            );
+                          }).toList(),
                     ),
                   ),
                 ],
               ),
               SizedBox(height: 10.h),
               Expanded(
-                child: _isLoading
-                    ? const DashboardSkeleton()
-                    : _errorMessage != null
+                child:
+                    _isLoading
+                        ? const DashboardSkeleton()
+                        : _errorMessage != null
                         ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  CupertinoIcons.exclamationmark_triangle,
-                                  size: 50.sp,
-                                  color: ColorPalette.iconGrey,
-                                ),
-                                SizedBox(height: 16.h),
-                                Text(
-                                  _errorMessage!,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(CupertinoIcons.exclamationmark_triangle, size: 50.sp, color: ColorPalette.iconGrey),
+                              SizedBox(height: 16.h),
+                              Text(
+                                _errorMessage!,
+                                style: TextStyle(fontSize: 14.sp, color: ColorPalette.textSecondary),
+                                textAlign: TextAlign.center,
+                              ),
+                              SizedBox(height: 16.h),
+                              ElevatedButton(onPressed: _loadInitialData, child: const Text('Retry')),
+                            ],
+                          ),
+                        )
+                        : _filteredClasses.isEmpty
+                        ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(CupertinoIcons.search_circle, size: 50.sp, color: ColorPalette.iconGrey),
+                              SizedBox(height: 16.h),
+                              Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 20.w),
+                                child: Text(
+                                  'No classes found for the selected criteria.',
                                   style: TextStyle(fontSize: 14.sp, color: ColorPalette.textSecondary),
                                   textAlign: TextAlign.center,
                                 ),
-                                SizedBox(height: 16.h),
-                                ElevatedButton(
-                                  onPressed: _loadInitialData,
-                                  child: const Text('Retry'),
-                                ),
-                              ],
-                            ),
-                          )
-                        : _filteredClasses.isEmpty
-                            ? Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      CupertinoIcons.search_circle,
-                                      size: 50.sp,
-                                      color: ColorPalette.iconGrey,
-                                    ),
-                                    SizedBox(height: 16.h),
-                                    Padding(
-                                      padding: EdgeInsets.symmetric(horizontal: 20.w),
-                                      child: Text(
-                                        'No classes found for the selected criteria.',
-                                        style: TextStyle(fontSize: 14.sp, color: ColorPalette.textSecondary),
-                                        textAlign: TextAlign.center,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              )
-                            : ListView.builder(
-                                itemCount: _filteredClasses.length,
-                                itemBuilder: (context, index) {
-                                  final classData = _filteredClasses[index];
-                                  final now = DateTime.now();
-                                  final startTimeString = classData['startTime'] as String?;
-                                  final endTimeString = classData['endTime'] as String?;
-                                  bool hasClassStarted = false;
-
-                                  if (startTimeString != null && endTimeString != null) {
-                                    try {
-                                      final startTime = DateFormat('HH:mm').parse(startTimeString);
-                                      final endTime = DateFormat('HH:mm').parse(endTimeString);
-                                      final classStartDateTime = DateTime(dateState.selectedDate.year, dateState.selectedDate.month, dateState.selectedDate.day, startTime.hour, startTime.minute);
-                                      final classEndDateTime = DateTime(dateState.selectedDate.year, dateState.selectedDate.month, dateState.selectedDate.day, endTime.hour, endTime.minute);
-                                      hasClassStarted = now.isAfter(classStartDateTime) && now.isBefore(classEndDateTime);
-                                    } catch (e) {
-                                      _logger.e("Error parsing time: $e");
-                                    }
-                                  }
-
-                                  return GestureDetector(
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => ProfessorClassDetailsScreen(classData: classData),
-                                        ),
-                                      );
-                                    },
-                                    child: buildClassListItem(
-                                      classData['subjectName'] ?? 'N/A',
-                                      classData['roomName'] ?? 'N/A',
-                                      classData['startTime'] ?? 'N/A',
-                                      hasClassStarted,
-                                    ),
-                                  );
-                                },
                               ),
+                            ],
+                          ),
+                        )
+                        : ListView.builder(
+                          itemCount: _filteredClasses.length,
+                          itemBuilder: (context, index) {
+                            final classData = _filteredClasses[index];
+                            final now = DateTime.now();
+                            final startTimeString = classData['startTime'] as String?;
+                            final endTimeString = classData['endTime'] as String?;
+                            bool hasClassStarted = false;
+
+                            if (startTimeString != null && endTimeString != null) {
+                              try {
+                                final startTime = DateFormat('HH:mm').parse(startTimeString);
+                                final endTime = DateFormat('HH:mm').parse(endTimeString);
+                                final classStartDateTime = DateTime(
+                                  dateState.selectedDate.year,
+                                  dateState.selectedDate.month,
+                                  dateState.selectedDate.day,
+                                  startTime.hour,
+                                  startTime.minute,
+                                );
+                                final classEndDateTime = DateTime(
+                                  dateState.selectedDate.year,
+                                  dateState.selectedDate.month,
+                                  dateState.selectedDate.day,
+                                  endTime.hour,
+                                  endTime.minute,
+                                );
+                                hasClassStarted = now.isAfter(classStartDateTime) && now.isBefore(classEndDateTime);
+                              } catch (e) {
+                                _logger.e("Error parsing time: $e");
+                              }
+                            }
+
+                            return GestureDetector(
+                              onTap: () {
+                                context.pushSlide(ProfessorClassDetailsScreen(classData: classData));
+                              },
+                              child: buildClassListItem(
+                                classData['subjectName'] ?? 'N/A',
+                                classData['roomName'] ?? 'N/A',
+                                classData['startTime'] ?? 'N/A',
+                                hasClassStarted,
+                              ),
+                            );
+                          },
+                        ),
               ),
             ],
           ),
         ),
       ),
-      bottomNavigationBar: CustomBottomNavBar(
-        selectedIndex: _selectedIndex,
-        onTap: _onItemTapped,
-      ),
+      bottomNavigationBar: CustomBottomNavBar(selectedIndex: _selectedIndex, onTap: _onItemTapped),
     );
   }
 }

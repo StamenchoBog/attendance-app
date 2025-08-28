@@ -14,14 +14,14 @@ class DateProvider extends ChangeNotifier {
   Future<void> _loadDateFromCache() async {
     final prefs = await SharedPreferences.getInstance();
     final timestamp = prefs.getInt(StorageKeys.cacheTimestamp);
-    
+
     if (timestamp != null) {
       final cacheTime = DateTime.fromMillisecondsSinceEpoch(timestamp);
       final now = DateTime.now();
-      
+
       if (now.difference(cacheTime).inHours < 1) {
         final dateString = prefs.getString(StorageKeys.cachedDate);
-        
+
         if (dateString != null) {
           _selectedDate = DateTime.parse(dateString);
           notifyListeners();
@@ -37,7 +37,9 @@ class DateProvider extends ChangeNotifier {
   }
 
   void updateDate(DateTime newDate) {
-    if (_selectedDate.year != newDate.year || _selectedDate.month != newDate.month || _selectedDate.day != newDate.day) {
+    if (_selectedDate.year != newDate.year ||
+        _selectedDate.month != newDate.month ||
+        _selectedDate.day != newDate.day) {
       _selectedDate = newDate;
       _saveDateToCache();
       notifyListeners();

@@ -8,7 +8,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:attendance_app/core/theme/color_palette.dart';
 import 'package:provider/provider.dart';
 import 'package:attendance_app/data/providers/user_provider.dart';
-import 'package:attendance_app/data/models/professor.dart';
 import 'package:attendance_app/data/models/student.dart';
 
 // Screens
@@ -63,8 +62,16 @@ class _ProfileOverviewScreenState extends State<ProfileOverviewScreen> {
       builder: (BuildContext dialogContext) {
         return AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
-          title: Text("Log out", textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17.sp, color: ColorPalette.textPrimary)),
-          content: Text("Are you sure you want to log out? You'll need to login again to use the app.", textAlign: TextAlign.center, style: TextStyle(fontSize: 14.sp, color: ColorPalette.textSecondary, height: 1.4)),
+          title: Text(
+            "Log out",
+            textAlign: TextAlign.center,
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17.sp, color: ColorPalette.textPrimary),
+          ),
+          content: Text(
+            "Are you sure you want to log out? You'll need to login again to use the app.",
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 14.sp, color: ColorPalette.textSecondary, height: 1.4),
+          ),
           actionsAlignment: MainAxisAlignment.center,
           actionsPadding: EdgeInsets.only(left: 15.w, right: 15.w, bottom: 15.h, top: 5.h),
           actions: <Widget>[
@@ -73,7 +80,12 @@ class _ProfileOverviewScreenState extends State<ProfileOverviewScreen> {
               children: [
                 Expanded(
                   child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(foregroundColor: ColorPalette.darkBlue, side: BorderSide(color: ColorPalette.darkBlue, width: 1.5.w), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)), padding: EdgeInsets.symmetric(vertical: 12.h)),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: ColorPalette.darkBlue,
+                      side: BorderSide(color: ColorPalette.darkBlue, width: 1.5.w),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
+                      padding: EdgeInsets.symmetric(vertical: 12.h),
+                    ),
                     child: Text("Cancel", style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w600)),
                     onPressed: () => Navigator.of(dialogContext).pop(),
                   ),
@@ -81,16 +93,19 @@ class _ProfileOverviewScreenState extends State<ProfileOverviewScreen> {
                 SizedBox(width: 10.w),
                 Expanded(
                   child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(backgroundColor: ColorPalette.darkBlue, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)), padding: EdgeInsets.symmetric(vertical: 12.h), elevation: 1),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: ColorPalette.darkBlue,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
+                      padding: EdgeInsets.symmetric(vertical: 12.h),
+                      elevation: 1,
+                    ),
                     child: Text("Log out", style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w600)),
                     onPressed: () {
                       Navigator.of(dialogContext).pop();
                       Provider.of<UserProvider>(context, listen: false).logout();
                       if (mounted) {
-                        Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
-                          MaterialPageRoute(builder: (context) => const SignInScreen()),
-                          (Route<dynamic> route) => false,
-                        );
+                        fastPushAndRemoveUntil(context, const SignInScreen());
                       }
                     },
                   ),
@@ -110,7 +125,10 @@ class _ProfileOverviewScreenState extends State<ProfileOverviewScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text("Profile", style: TextStyle(color: ColorPalette.textPrimary, fontWeight: FontWeight.w600, fontSize: 18.sp)),
+        title: Text(
+          "Profile",
+          style: TextStyle(color: ColorPalette.textPrimary, fontWeight: FontWeight.w600, fontSize: 18.sp),
+        ),
         centerTitle: true,
         backgroundColor: Colors.white,
         elevation: 0,
@@ -143,10 +161,7 @@ class _ProfileOverviewScreenState extends State<ProfileOverviewScreen> {
           ],
         ),
       ),
-      bottomNavigationBar: CustomBottomNavBar(
-        selectedIndex: _selectedIndex,
-        onTap: _onItemTapped,
-      ),
+      bottomNavigationBar: CustomBottomNavBar(selectedIndex: _selectedIndex, onTap: _onItemTapped),
     );
   }
 
@@ -154,7 +169,15 @@ class _ProfileOverviewScreenState extends State<ProfileOverviewScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('ATTENDANCE SUMMARY', style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.bold, color: ColorPalette.textSecondary, letterSpacing: 0.8)),
+        Text(
+          'ATTENDANCE SUMMARY',
+          style: TextStyle(
+            fontSize: 12.sp,
+            fontWeight: FontWeight.bold,
+            color: ColorPalette.textSecondary,
+            letterSpacing: 0.8,
+          ),
+        ),
         SizedBox(height: 10.h),
         FutureBuilder<Map<String, dynamic>>(
           future: _attendanceSummaryFuture,
@@ -169,7 +192,12 @@ class _ProfileOverviewScreenState extends State<ProfileOverviewScreen> {
                 children: [
                   Expanded(child: _buildSummaryCard('Overall Attendance', '${summary['overallPercentage']}%')),
                   SizedBox(width: 15.w),
-                  Expanded(child: _buildSummaryCard('Classes Attended', '${summary['attendedClasses']}/${summary['totalClasses']}')),
+                  Expanded(
+                    child: _buildSummaryCard(
+                      'Classes Attended',
+                      '${summary['attendedClasses']}/${summary['totalClasses']}',
+                    ),
+                  ),
                 ],
               );
             }
@@ -183,14 +211,14 @@ class _ProfileOverviewScreenState extends State<ProfileOverviewScreen> {
   Widget _buildSummaryCard(String title, String value) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
-      decoration: BoxDecoration(
-        color: ColorPalette.lightestBlue,
-        borderRadius: BorderRadius.circular(12.r),
-      ),
+      decoration: BoxDecoration(color: ColorPalette.lightestBlue, borderRadius: BorderRadius.circular(12.r)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: TextStyle(fontSize: 13.sp, color: ColorPalette.textSecondary, fontWeight: FontWeight.w500)),
+          Text(
+            title,
+            style: TextStyle(fontSize: 13.sp, color: ColorPalette.textSecondary, fontWeight: FontWeight.w500),
+          ),
           SizedBox(height: 6.h),
           Text(value, style: TextStyle(fontSize: 22.sp, color: ColorPalette.darkBlue, fontWeight: FontWeight.bold)),
         ],
@@ -232,12 +260,23 @@ class _ProfileOverviewScreenState extends State<ProfileOverviewScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('SETTINGS & ACTIONS', style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.bold, color: ColorPalette.textSecondary, letterSpacing: 0.8)),
+        Text(
+          'SETTINGS & ACTIONS',
+          style: TextStyle(
+            fontSize: 12.sp,
+            fontWeight: FontWeight.bold,
+            color: ColorPalette.textSecondary,
+            letterSpacing: 0.8,
+          ),
+        ),
         SizedBox(height: 10.h),
         _buildSettingsItem('Languages', onTap: () => navigateToSetting(context, 'languages')),
-        if (user is Student)
-          _buildSettingsItem('Devices', onTap: () => navigateToSetting(context, 'devices')),
-        _buildSettingsItem('Report a problem', onTap: () => navigateToSetting(context, 'report_a_problem'), showDivider: false),
+        if (user is Student) _buildSettingsItem('Devices', onTap: () => navigateToSetting(context, 'devices')),
+        _buildSettingsItem(
+          'Report a problem',
+          onTap: () => navigateToSetting(context, 'report_a_problem'),
+          showDivider: false,
+        ),
       ],
     );
   }

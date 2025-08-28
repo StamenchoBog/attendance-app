@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:attendance_app/data/services/api/api_client.dart';
 import 'package:attendance_app/data/services/api/api_endpoints.dart';
 import 'package:attendance_app/data/services/service_starter.dart';
@@ -90,7 +89,7 @@ class DeviceIdentifierService {
     return uuid;
   }
 
-  // 
+  //
   // Information showed to the user
   //
 
@@ -125,24 +124,36 @@ class DeviceIdentifierService {
     }
     return 'Unknown OS'; // Fallback
   }
-  
+
   Future<Map<String, String?>> getRegisteredDevice(String? studentIndex) async {
     try {
-      final response = await _apiClient.get(
-          '${ApiEndpoints.students}/$studentIndex/registered-device'
+      final response = await _apiClient.get<Map<String, dynamic>>(
+        '${ApiEndpoints.students}/$studentIndex/registered-device',
       );
-      final Map<String, String> data = response['data'];
+
+      // Check if response data is null
+      if (response.data == null || response.data!['data'] == null) {
+        _logger.i('No registered device found for student $studentIndex.');
+        return {'id': null, 'name': null, 'os': null};
+      }
+
+      final Map<String, dynamic> data = response.data!['data'];
       _logger.i('Successfully fetched registered device for student $studentIndex.');
       return {
-        'id': data['device_id'],
-        'name': data['device_name'],
-        'os': data['device_os'],
+        'id': data['deviceId']?.toString(),
+        'name': data['deviceName']?.toString(),
+        'os': data['deviceOs']?.toString(),
       };
     } on ApiException catch (e) {
-      _logger.e('API Error on device link request: ${e.message}');
-      throw Exception('Failed to submit request: ${e.message}');
+      // Handle 404 or other errors that indicate no device is registered
+      if (e.statusCode == 404) {
+        _logger.i('No registered device found for student $studentIndex (404).');
+        return {'id': null, 'name': null, 'os': null};
+      }
+      _logger.e('API Error on getting registered device: ${e.message}');
+      throw Exception('Failed to get device information: ${e.message}');
     } catch (e) {
-      _logger.e('Unknown error on device link request: $e');
+      _logger.e('Unknown error on getting registered device: $e');
       throw Exception('An unexpected error occurred. Please try again.');
     }
   }
@@ -156,17 +167,10 @@ class DeviceIdentifierService {
       throw Exception('Could not get device identifier.');
     }
 
-    final requestBody = {
-      'deviceId': deviceId,
-      'deviceName': deviceName,
-      'deviceOs': deviceOs,
-    };
+    final requestBody = {'deviceId': deviceId, 'deviceName': deviceName, 'deviceOs': deviceOs};
 
     try {
-      await _apiClient.post(
-        '${ApiEndpoints.students}/$studentIndex/device-link-request',
-        requestBody,
-      );
+      await _apiClient.post<void>('${ApiEndpoints.students}/$studentIndex/device-link-request', data: requestBody);
       _logger.i('Successfully sent device link request for student $studentIndex.');
     } on ApiException catch (e) {
       _logger.e('API Error on device link request: ${e.message}');
@@ -176,4 +180,62 @@ class DeviceIdentifierService {
       throw Exception('An unexpected error occurred. Please try again.');
     }
   }
+
+  Future<void> registerFirstTimeDevice(String studentIndex) async {
+    final deviceId = await getPlatformSpecificIdentifier();
+    final deviceName = await getDeviceName();
+    final deviceOs = await getOsVersion();
+
+    if (deviceId == null) {
+      throw DeviceRegistrationException('DEVICE_ID_ERROR', 'Could not get device identifier.');
+    }
+
+    final requestBody = {'deviceId': deviceId, 'deviceName': deviceName, 'deviceOs': deviceOs};
+
+    try {
+      final response = await _apiClient.post<Map<String, dynamic>>(
+        '${ApiEndpoints.students}/$studentIndex/register-first-device',
+        data: requestBody,
+      );
+
+      // Check if response contains error information
+      if (response.data != null && response.data!['success'] == false) {
+        final errorCode = response.data!['errorCode'] ?? 'UNKNOWN_ERROR';
+        final errorMessage = response.data!['message'] ?? 'Registration failed';
+        throw DeviceRegistrationException(errorCode, errorMessage);
+      }
+
+      _logger.i('Successfully registered first-time device for student $studentIndex.');
+    } on ApiException catch (e) {
+      _logger.e('API Error on first-time device registration: ${e.message}');
+
+      // Try to extract error code from API response
+      String errorCode = 'REGISTRATION_FAILED';
+      if (e.message.contains('DEVICE_ALREADY_REGISTERED')) {
+        errorCode = 'DEVICE_ALREADY_REGISTERED';
+      } else if (e.message.contains('INVALID_INPUT')) {
+        errorCode = 'INVALID_INPUT';
+      } else if (e.statusCode == 400) {
+        errorCode = 'INVALID_INPUT';
+      } else if (e.statusCode == 409) {
+        errorCode = 'DEVICE_ALREADY_REGISTERED';
+      }
+
+      throw DeviceRegistrationException(errorCode, e.message);
+    } catch (e) {
+      _logger.e('Unknown error on first-time device registration: $e');
+      throw DeviceRegistrationException('UNKNOWN_ERROR', 'An unexpected error occurred. Please try again.');
+    }
+  }
+}
+
+// Custom exception for device registration errors
+class DeviceRegistrationException implements Exception {
+  final String errorCode;
+  final String message;
+
+  const DeviceRegistrationException(this.errorCode, this.message);
+
+  @override
+  String toString() => 'DeviceRegistrationException: $errorCode - $message';
 }

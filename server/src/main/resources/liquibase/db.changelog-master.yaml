@@ -1,25 +1,50 @@
 databaseChangeLog:
-   Implement database improvements
+  # Schema Changes (DDL)
   - include:
-      file: sql/001_database_improvements.sql
+      file: sql/001_initial_schema_improvements.sql
       relativeToChangelogFile: true
 
   - include:
-      file: sql/002_test-data.sql
+      file: sql/002_attendance_schema_updates.sql
       relativeToChangelogFile: true
 
   - include:
-      file: sql/003_attendance_updates.sql
+      file: sql/003_device_link_requests.sql
       relativeToChangelogFile: true
 
   - include:
-      file: sql/004_performance_indexes.sql
+      file: sql/004_reports_table.sql
       relativeToChangelogFile: true
 
   - include:
-      file: sql/005_refactor_joined_subject_codes.sql
+      file: sql/005_ble_beacon_proximity.sql
       relativeToChangelogFile: true
 
   - include:
-      file: sql/006_device_link_requests.sql
+      file: sql/006_student_attendance_table.sql
       relativeToChangelogFile: true
+
+  # Data Migrations (DML)
+  - include:
+      file: sql/007_refactor_joined_subject_codes.sql
+      relativeToChangelogFile: true
+
+  # Performance Optimizations
+  - include:
+      file: sql/008_database_indexes.sql
+      relativeToChangelogFile: true
+
+  - include:
+      file: sql/009_reports_optimization.sql
+      relativeToChangelogFile: true
+
+  # Comprehensive Test Data (dev/test only) - Consolidated and Refactored
+  - include:
+      file: sql/010_comprehensive_test_data.sql
+      relativeToChangelogFile: true
+      context: "dev,test"
+
+  - include:
+      file: sql/011_class_scheduling_and_attendance.sql
+      relativeToChangelogFile: true
+      context: "dev,test"

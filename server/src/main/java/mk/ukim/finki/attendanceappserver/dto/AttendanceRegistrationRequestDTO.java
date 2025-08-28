@@ -9,4 +9,5 @@ public class AttendanceRegistrationRequestDTO {
 
     private String token;
     private String studentIndex;
+    private String deviceId; // Add device verification
 }

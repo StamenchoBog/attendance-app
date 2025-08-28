@@ -4,10 +4,10 @@ import lombok.AllArgsConstructor;
 import mk.ukim.finki.attendanceappserver.domain.enums.DeviceLinkStatus;
 import mk.ukim.finki.attendanceappserver.dto.DeviceLinkRequestDTO;
 import mk.ukim.finki.attendanceappserver.dto.generic.APIResponse;
-import mk.ukim.finki.attendanceappserver.repositories.DeviceLinkRequestRepository;
-import mk.ukim.finki.attendanceappserver.repositories.StudentDeviceRepository;
-import mk.ukim.finki.attendanceappserver.repositories.models.DeviceLinkRequest;
-import mk.ukim.finki.attendanceappserver.repositories.models.StudentDevice;
+import mk.ukim.finki.attendanceappserver.domain.repositories.DeviceLinkRequestRepository;
+import mk.ukim.finki.attendanceappserver.domain.repositories.StudentDeviceRepository;
+import mk.ukim.finki.attendanceappserver.domain.models.DeviceLinkRequest;
+import mk.ukim.finki.attendanceappserver.domain.models.StudentDevice;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
@@ -19,7 +19,58 @@ public class DeviceManagementService {
     private final StudentDeviceRepository studentDeviceRepository;
 
     public Mono<APIResponse<DeviceLinkRequestDTO>> getRegisteredDevices(String studentIndex) {
-        return studentDeviceRepository.getStudentDeviceByStudentIndex(studentIndex);
+        return studentDeviceRepository.findByStudentIndex(studentIndex)
+                .map(studentDevice -> {
+                    DeviceLinkRequestDTO dto = DeviceLinkRequestDTO.builder()
+                            .deviceId(studentDevice.getDeviceId())
+                            .deviceName(studentDevice.getDeviceName())
+                            .deviceOs(studentDevice.getDeviceOs())
+                            .build();
+                    return APIResponse.success(dto);
+                })
+                .defaultIfEmpty(APIResponse.success(null));
+    }
+
+    public Mono<Boolean> isDeviceApprovedForStudent(String studentIndex, String deviceId) {
+        return studentDeviceRepository.findByStudentIndex(studentIndex)
+                .map(studentDevice -> studentDevice.getDeviceId().equals(deviceId))
+                .defaultIfEmpty(false);
+    }
+
+    public Mono<Boolean> hasRegisteredDevice(String studentIndex) {
+        return studentDeviceRepository.findByStudentIndex(studentIndex)
+                .hasElement();
+    }
+
+    public Mono<Void> registerFirstTimeDevice(String studentIndex, DeviceLinkRequestDTO request) {
+        // Validate input parameters
+        if (studentIndex == null || studentIndex.trim().isEmpty()) {
+            return Mono.error(new IllegalArgumentException("Student index cannot be empty"));
+        }
+        if (request.getDeviceId() == null || request.getDeviceId().trim().isEmpty()) {
+            return Mono.error(new IllegalArgumentException("Device ID cannot be empty"));
+        }
+        
+        return hasRegisteredDevice(studentIndex)
+                .flatMap(hasDevice -> {
+                    if (hasDevice) {
+                        return Mono.error(new IllegalStateException("DEVICE_ALREADY_REGISTERED"));
+                    }
+                    
+                    // For first-time registration, auto-approve immediately
+                    StudentDevice newStudentDevice = StudentDevice.builder()
+                            .studentIndex(studentIndex)
+                            .deviceId(request.getDeviceId())
+                            .deviceName(request.getDeviceName())
+                            .deviceOs(request.getDeviceOs())
+                            .build();
+                    
+                    return studentDeviceRepository.save(newStudentDevice).then();
+                })
+                .onErrorMap(IllegalStateException.class, ex -> 
+                    new IllegalStateException("DEVICE_ALREADY_REGISTERED"))
+                .onErrorMap(Exception.class, ex -> 
+                    new RuntimeException("DEVICE_REGISTRATION_FAILED"));
     }
 
     public Mono<Void> createDeviceLinkRequest(String studentIndex, DeviceLinkRequestDTO request) {

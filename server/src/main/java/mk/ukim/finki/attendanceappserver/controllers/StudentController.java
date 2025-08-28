@@ -4,7 +4,7 @@ import lombok.AllArgsConstructor;
 import mk.ukim.finki.attendanceappserver.dto.AttendanceSummaryDTO;
 import mk.ukim.finki.attendanceappserver.dto.DeviceLinkRequestDTO;
 import mk.ukim.finki.attendanceappserver.dto.generic.APIResponse;
-import mk.ukim.finki.attendanceappserver.repositories.models.Student;
+import mk.ukim.finki.attendanceappserver.domain.models.Student;
 import mk.ukim.finki.attendanceappserver.services.AttendanceService;
 import mk.ukim.finki.attendanceappserver.services.DeviceManagementService;
 import mk.ukim.finki.attendanceappserver.services.StudentService;
@@ -76,5 +76,20 @@ public class StudentController {
         LOGGER.info("Request to link a new device for student [{}]", studentIndex);
         return deviceManagementService.createDeviceLinkRequest(studentIndex, dto)
                 .then(Mono.just(APIResponse.<Void>success(null)));
+    }
+
+    @PostMapping("/{studentIndex}/register-first-device")
+    public Mono<APIResponse<Void>> registerFirstDevice(@PathVariable String studentIndex, @RequestBody DeviceLinkRequestDTO dto) {
+        LOGGER.info("Request to register first-time device for student [{}]", studentIndex);
+        return deviceManagementService.registerFirstTimeDevice(studentIndex, dto)
+                .then(Mono.just(APIResponse.<Void>success(null)))
+                .onErrorReturn(ex -> ex instanceof IllegalStateException && 
+                    "DEVICE_ALREADY_REGISTERED".equals(ex.getMessage()),
+                    APIResponse.error("This student already has a registered device", 409))
+                .onErrorReturn(ex -> ex instanceof IllegalArgumentException,
+                    APIResponse.error("Invalid device information provided", 400))
+                .onErrorReturn(ex -> ex instanceof RuntimeException && 
+                    "DEVICE_REGISTRATION_FAILED".equals(ex.getMessage()),
+                    APIResponse.error("Failed to register device. Please try again", 500));
     }
 }

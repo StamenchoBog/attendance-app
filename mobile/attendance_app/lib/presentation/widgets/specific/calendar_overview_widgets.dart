@@ -31,14 +31,19 @@ Widget buildTimelineLabels(int startHour, int endHour, double hourHeight, double
   }
 
   labels.add(
-      Positioned(
-        top: (endHour - startHour) * hourHeight - 8.h,
-        left: 5.w,
-        child: Container(
-            height: hourHeight, width: timelineLeftPadding - 10.w, alignment: Alignment.topCenter,
-            child: Text( '${endHour.toString().padLeft(2, '0')}:00', style: TextStyle(fontSize: 12.sp, color: ColorPalette.textSecondary), ),
+    Positioned(
+      top: (endHour - startHour) * hourHeight - 8.h,
+      left: 5.w,
+      child: Container(
+        height: hourHeight,
+        width: timelineLeftPadding - 10.w,
+        alignment: Alignment.topCenter,
+        child: Text(
+          '${endHour.toString().padLeft(2, '0')}:00',
+          style: TextStyle(fontSize: 12.sp, color: ColorPalette.textSecondary),
         ),
       ),
+    ),
   );
   return Stack(children: labels);
 }
@@ -51,14 +56,23 @@ Widget buildHourLines(int startHour, int endHour, double hourHeight, double time
         top: (hour - startHour) * hourHeight,
         left: timelineLeftPadding,
         right: 0,
-        child: Divider( thickness: 0.5, height: 0.5, color: Colors.grey[300],),
+        child: Divider(thickness: 0.5, height: 0.5, color: Colors.grey[300]),
       ),
     );
   }
   return Stack(children: lines);
 }
 
-Widget buildEventArea(BuildContext context, List<Map<String, dynamic>> events, int startHour, int endHour, double hourHeight, double timelineLeftPadding, Function(Map<String, dynamic>) onEventTap, String userRole) {
+Widget buildEventArea(
+  BuildContext context,
+  List<Map<String, dynamic>> events,
+  int startHour,
+  int endHour,
+  double hourHeight,
+  double timelineLeftPadding,
+  Function(Map<String, dynamic>) onEventTap,
+  String userRole,
+) {
   List<Widget> eventWidgets = [];
   double pixelsPerMinute = hourHeight / 60.0;
 
@@ -88,7 +102,8 @@ Widget buildEventArea(BuildContext context, List<Map<String, dynamic>> events, i
 
     if (endTime.hour < startHour || startTime.hour >= endHour) continue;
 
-    final DateTime clampedStart = startTime.hour < startHour ? startTime.copyWith(hour: startHour, minute: 0) : startTime;
+    final DateTime clampedStart =
+        startTime.hour < startHour ? startTime.copyWith(hour: startHour, minute: 0) : startTime;
     final DateTime clampedEnd = endTime.hour >= endHour ? endTime.copyWith(hour: endHour, minute: 0) : endTime;
     final Duration clampedDuration = clampedEnd.difference(clampedStart);
 
@@ -125,51 +140,61 @@ Widget buildEventArea(BuildContext context, List<Map<String, dynamic>> events, i
   return Stack(children: eventWidgets);
 }
 
-Widget _buildEventItem(BuildContext context, Map<String, dynamic> event, Function(Map<String, dynamic>) onEventTap, String userRole) {
-    final String title = event['title'] ?? 'Unknown';
-    final DateTime startTime = event['dateTime'];
-    final Duration duration = event['duration'];
-    final DateTime endTime = startTime.add(duration);
+Widget _buildEventItem(
+  BuildContext context,
+  Map<String, dynamic> event,
+  Function(Map<String, dynamic>) onEventTap,
+  String userRole,
+) {
+  final String title = event['title'] ?? 'Unknown';
+  final DateTime startTime = event['dateTime'];
+  final Duration duration = event['duration'];
+  final DateTime endTime = startTime.add(duration);
 
-    bool isStudent = userRole == ApiRoles.studentRole;
-    final bool hasPassed = endTime.isBefore(DateTime.now());
-    final bool isReadOnly = isStudent && hasPassed;
+  bool isStudent = userRole == ApiRoles.studentRole;
+  final bool hasPassed = endTime.isBefore(DateTime.now());
+  final bool isReadOnly = isStudent && hasPassed;
 
-    final Color eventColor = isReadOnly ? Colors.grey : ColorPalette.darkBlue;
+  final Color eventColor = isReadOnly ? Colors.grey : ColorPalette.darkBlue;
 
-    return Material(
-      color: isReadOnly ? ColorPalette.cardBackground : ColorPalette.lightestBlue.withValues(alpha: 0.9),
+  return Material(
+    color: isReadOnly ? ColorPalette.cardBackground : ColorPalette.lightestBlue.withValues(alpha: 0.9),
+    borderRadius: BorderRadius.circular(4.r),
+    child: InkWell(
+      onTap: isReadOnly ? null : () => onEventTap(event),
       borderRadius: BorderRadius.circular(4.r),
-      child: InkWell(
-        onTap: isReadOnly ? null : () => onEventTap(event),
-        borderRadius: BorderRadius.circular(4.r),
-        child: Container(
-           padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 2.h),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(4.r),
-               border: Border.all(color: eventColor.withValues(alpha: 0.6), width: 0.8.w),
-            ),
-          child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.start,
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 2.h),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(4.r),
+          border: Border.all(color: eventColor.withValues(alpha: 0.6), width: 0.8.w),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            Row(
               children: [
-                Row(
-                  children: [
-                    Icon(CupertinoIcons.bell_fill, size: 10.sp, color: eventColor),
-                    SizedBox(width: 3.w),
-                    Expanded(
-                      child: Text( title, style: TextStyle(fontSize: 10.sp, fontWeight: FontWeight.bold, color: eventColor), overflow: TextOverflow.ellipsis, maxLines: 1,),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 2.h),
-                Text(
-                  '${DateFormat('HH:mm').format(startTime)}-${DateFormat('HH:mm').format(endTime)}',
-                  style: TextStyle(fontSize: 9.sp, color: eventColor.withValues(alpha: 0.8)),
+                Icon(CupertinoIcons.bell_fill, size: 10.sp, color: eventColor),
+                SizedBox(width: 3.w),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: TextStyle(fontSize: 10.sp, fontWeight: FontWeight.bold, color: eventColor),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
                 ),
               ],
-          ),
+            ),
+            SizedBox(height: 2.h),
+            Text(
+              '${DateFormat('HH:mm').format(startTime)}-${DateFormat('HH:mm').format(endTime)}',
+              style: TextStyle(fontSize: 9.sp, color: eventColor.withValues(alpha: 0.8)),
+            ),
+          ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}

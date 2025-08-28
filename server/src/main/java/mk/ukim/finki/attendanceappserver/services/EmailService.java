@@ -3,7 +3,7 @@ package mk.ukim.finki.attendanceappserver.services;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import mk.ukim.finki.attendanceappserver.config.DeviceLinkProperties;
-import mk.ukim.finki.attendanceappserver.repositories.models.DeviceLinkRequest;
+import mk.ukim.finki.attendanceappserver.domain.models.DeviceLinkRequest;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 

@@ -2,7 +2,7 @@ package mk.ukim.finki.attendanceappserver.controllers;
 
 import lombok.AllArgsConstructor;
 import mk.ukim.finki.attendanceappserver.dto.generic.APIResponse;
-import mk.ukim.finki.attendanceappserver.repositories.models.Semester;
+import mk.ukim.finki.attendanceappserver.domain.models.Semester;
 import mk.ukim.finki.attendanceappserver.services.SemesterService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

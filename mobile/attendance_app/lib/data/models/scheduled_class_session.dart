@@ -24,8 +24,7 @@ class ScheduledClassSession {
     required this.semesterCode,
   });
 
-  factory ScheduledClassSession.fromJson(Map<String, dynamic> json) =>
-      _$ScheduledClassSessionFromJson(json);
+  factory ScheduledClassSession.fromJson(Map<String, dynamic> json) => _$ScheduledClassSessionFromJson(json);
 
   Map<String, dynamic> toJson() => _$ScheduledClassSessionToJson(this);
 }

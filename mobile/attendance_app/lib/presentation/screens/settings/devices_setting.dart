@@ -50,7 +50,6 @@ class _DevicesOverviewScreenState extends State<DevicesOverviewScreen> {
     });
   }
 
-
   Future<Map<String, Map<String, String?>>> _loadDeviceInfo() async {
     final user = Provider.of<UserProvider>(context, listen: false).currentUser as Student?;
     // Fetch both registered and current device info in parallel
@@ -58,10 +57,7 @@ class _DevicesOverviewScreenState extends State<DevicesOverviewScreen> {
       _deviceIdentifierService.getRegisteredDevice(user?.studentIndex),
       _getCurrentDeviceInfo(),
     ]);
-    return {
-      'registered': results[0],
-      'current': results[1],
-    };
+    return {'registered': results[0], 'current': results[1]};
   }
 
   Future<Map<String, String?>> _getCurrentDeviceInfo() async {
@@ -76,7 +72,10 @@ class _DevicesOverviewScreenState extends State<DevicesOverviewScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text('Devices', style: TextStyle(color: ColorPalette.textPrimary, fontWeight: FontWeight.w600, fontSize: 18.sp)),
+        title: Text(
+          'Devices',
+          style: TextStyle(color: ColorPalette.textPrimary, fontWeight: FontWeight.w600, fontSize: 18.sp),
+        ),
         centerTitle: true,
         backgroundColor: Colors.white,
         elevation: 0,
@@ -168,9 +167,15 @@ class _DevicesOverviewScreenState extends State<DevicesOverviewScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: TextStyle(fontSize: 13.sp, color: ColorPalette.textSecondary, fontWeight: FontWeight.w500)),
+                  Text(
+                    title,
+                    style: TextStyle(fontSize: 13.sp, color: ColorPalette.textSecondary, fontWeight: FontWeight.w500),
+                  ),
                   SizedBox(height: 4.h),
-                  Text(deviceName, style: TextStyle(fontSize: 16.sp, color: ColorPalette.textPrimary, fontWeight: FontWeight.bold)),
+                  Text(
+                    deviceName,
+                    style: TextStyle(fontSize: 16.sp, color: ColorPalette.textPrimary, fontWeight: FontWeight.bold),
+                  ),
                   SizedBox(height: 2.h),
                   Text(deviceOs, style: TextStyle(fontSize: 13.sp, color: ColorPalette.textSecondary)),
                 ],
@@ -222,41 +227,44 @@ class _DevicesOverviewScreenState extends State<DevicesOverviewScreen> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
           textStyle: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600),
         ),
-        onPressed: devicesMatch || _isSubmitting ? null : () async {
-          setState(() => _isSubmitting = true);
-          try {
-            final user = Provider.of<UserProvider>(context, listen: false).currentUser as Student?;
-            if (user == null) return;
+        onPressed:
+            devicesMatch || _isSubmitting
+                ? null
+                : () async {
+                  setState(() => _isSubmitting = true);
+                  try {
+                    final user = Provider.of<UserProvider>(context, listen: false).currentUser as Student?;
+                    if (user == null) return;
 
-            await _deviceIdentifierService.requestDeviceLink(user.studentIndex);
+                    await _deviceIdentifierService.requestDeviceLink(user.studentIndex);
 
-            Fluttertoast.showToast(
-                msg: "Request submitted! It will be processed shortly.",
-                toastLength: Toast.LENGTH_LONG,
-                gravity: ToastGravity.TOP,
-                backgroundColor: Colors.green,
-                textColor: Colors.white,
-                fontSize: 16.0.sp
-            );
-
-          } catch (e) {
-            Fluttertoast.showToast(
-                msg: "Error: ${e.toString()}",
-                toastLength: Toast.LENGTH_LONG,
-                gravity: ToastGravity.TOP,
-                backgroundColor: Colors.red,
-                textColor: Colors.white,
-                fontSize: 16.0.sp
-            );
-          } finally {
-            if (mounted) {
-              setState(() => _isSubmitting = false);
-            }
-          }
-        },
-        child: _isSubmitting
-            ? const CircularProgressIndicator(color: Colors.white)
-            : Text(devicesMatch ? 'Device Linked' : 'Link This Device'),
+                    Fluttertoast.showToast(
+                      msg: "Request submitted! It will be processed shortly.",
+                      toastLength: Toast.LENGTH_LONG,
+                      gravity: ToastGravity.TOP,
+                      backgroundColor: Colors.green,
+                      textColor: Colors.white,
+                      fontSize: 16.0.sp,
+                    );
+                  } catch (e) {
+                    Fluttertoast.showToast(
+                      msg: "Error: ${e.toString()}",
+                      toastLength: Toast.LENGTH_LONG,
+                      gravity: ToastGravity.TOP,
+                      backgroundColor: Colors.red,
+                      textColor: Colors.white,
+                      fontSize: 16.0.sp,
+                    );
+                  } finally {
+                    if (mounted) {
+                      setState(() => _isSubmitting = false);
+                    }
+                  }
+                },
+        child:
+            _isSubmitting
+                ? const CircularProgressIndicator(color: Colors.white)
+                : Text(devicesMatch ? 'Device Linked' : 'Link This Device'),
       ),
     );
   }

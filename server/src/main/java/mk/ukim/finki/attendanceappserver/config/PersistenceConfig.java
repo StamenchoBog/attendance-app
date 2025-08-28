@@ -1,7 +1,7 @@
 package mk.ukim.finki.attendanceappserver.config;
 
 import lombok.NonNull;
-import mk.ukim.finki.attendanceappserver.repositories.models.*;
+import mk.ukim.finki.attendanceappserver.domain.models.*;
 import org.reactivestreams.Publisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
