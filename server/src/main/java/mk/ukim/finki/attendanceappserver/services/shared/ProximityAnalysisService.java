@@ -23,8 +23,6 @@ import java.util.List;
 public class ProximityAnalysisService {
 
     /**
-    private final AttendanceUpdateService attendanceUpdateService;
-
      * Analyzes proximity detections and returns verification response
      */
     public Mono<ProximityVerificationResponseDTO> analyzeProximityDetections(ProximityVerificationRequestDTO request) {

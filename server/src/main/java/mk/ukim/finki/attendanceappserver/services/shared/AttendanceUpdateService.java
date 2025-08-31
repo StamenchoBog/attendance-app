@@ -18,7 +18,6 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
-
 /**
  * Shared service for attendance and logging operations to eliminate duplication
  * between AttendanceService and ProximityVerificationService
@@ -38,10 +37,19 @@ public class AttendanceUpdateService {
                                                           ProximityVerificationResponseDTO response) {
         if (Boolean.TRUE.equals(response.getVerificationSuccess())) {
             attendance.setStatus(AttendanceStatus.PRESENT);
-            attendance.setProximity(response.getAverageDistance() != null ? response.getAverageDistance().toString() : null);
+            Double avgDistance = response.getAverageDistance();
+            // Only store a valid proximity value
+            if (avgDistance != null && avgDistance != Double.MAX_VALUE) {
+                attendance.setProximity(avgDistance.toString());
+                log.debug("Storing proximity value for attendance [{}]: {}", attendance.getId(), avgDistance);
+            } else {
+                attendance.setProximity(null);
+                log.debug("No valid proximity value for attendance [{}]", attendance.getId());
+            }
         } else {
             attendance.setStatus(AttendanceStatus.ABSENT);
             attendance.setProximity(null);
+            log.debug("Attendance [{}] marked absent, no proximity value stored", attendance.getId());
         }
         return studentAttendanceRepository.save(attendance);
     }
@@ -80,9 +88,8 @@ public class AttendanceUpdateService {
      * Logs individual proximity detection during verification
      */
     public Mono<Void> logProximityDetection(ProximityDetectionDTO detection, Integer attendanceId) {
-        log.debug("Logging proximity detection for student [{}]: {} at {}m for attendance ID [{}]",
-                detection.getStudentIndex(), detection.getProximityLevel(), detection.getEstimatedDistance(), attendanceId);
-
+        log.debug("Logging proximity detection for student [{}]: {} at {}m for attendance ID [{}], beaconType=[{}]",
+                detection.getStudentIndex(), detection.getProximityLevel(), detection.getEstimatedDistance(), attendanceId, detection.getBeaconType());
         ProximityVerificationLog logEntry = ProximityVerificationLog.builder()
                 .studentAttendanceId(attendanceId)
                 .studentIndex(detection.getStudentIndex())
@@ -95,7 +102,6 @@ public class AttendanceUpdateService {
                 .beaconType(detection.getBeaconType())
                 .sessionToken(detection.getSessionToken())
                 .build();
-
         return proximityVerificationRepository.save(logEntry).then();
     }
 
@@ -105,23 +111,24 @@ public class AttendanceUpdateService {
     public Mono<ProximityVerificationResponseDTO> logProximityVerificationSummary(
             ProximityVerificationRequestDTO request,
             ProximityVerificationResponseDTO response) {
-
+        ProximityDetectionDTO firstDetection = request.getProximityDetections().getFirst();
+        log.debug("Logging proximity summary for student [{}]: beaconType=[{}]",
+                request.getStudentIndex(), firstDetection.getBeaconType());
         ProximityVerificationLog summaryLog = ProximityVerificationLog.builder()
                 .studentAttendanceId(request.getAttendanceId())
                 .studentIndex(request.getStudentIndex())
+                .beaconDeviceId(firstDetection.getBeaconDeviceId())
                 .detectedRoomId(response.getDetectedRoomId())
                 .expectedRoomId(response.getExpectedRoomId())
                 .estimatedDistance(response.getAverageDistance())
                 .verificationTimestamp(LocalDateTime.now())
                 .verificationDurationSeconds(request.getVerificationDurationSeconds())
                 .sessionToken(request.getSessionToken())
-                .rssi(request.getProximityDetections().getFirst().getRssi())
-                .proximityLevel(ProximityLevel.valueOf(request.getProximityDetections().getFirst().getProximityLevel()))
+                .rssi(firstDetection.getRssi())
+                .proximityLevel(ProximityLevel.valueOf(firstDetection.getProximityLevel()))
                 .verificationStatus(ProximityVerificationStatus.valueOf(response.getVerificationStatus()))
-                .sessionToken(request.getSessionToken())
-                // TODO: Add beacon_type and beacon_device_id
+                .beaconType(firstDetection.getBeaconType())
                 .build();
-
         return proximityVerificationRepository.save(summaryLog).then(Mono.just(response));
     }
 }

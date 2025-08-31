@@ -5,6 +5,7 @@ import '../../data/models/beacon_models.dart';
 
 class BluetoothPermissionManager {
   static final _logger = Logger();
+
   /// Check and request Bluetooth permissions
   static Future<PermissionRequestResult> checkAndRequestPermissions() async {
     try {

@@ -103,6 +103,19 @@ class ErrorHandler {
 
   /// Converts various error types to user-friendly messages
   static String getErrorMessage(dynamic error) {
+    // Handle custom ApiException first
+    if (error.toString().contains('ApiException:')) {
+      // Extract the actual message from ApiException toString format
+      final message = error.toString();
+      final colonIndex = message.indexOf(':');
+      if (colonIndex != -1 && colonIndex < message.length - 1) {
+        final extractedMessage = message.substring(colonIndex + 1).trim();
+        // Remove the code part if it exists
+        final codePattern = RegExp(r'\s*\(Code:\s*\d+\)$');
+        return extractedMessage.replaceAll(codePattern, '').trim();
+      }
+    }
+
     if (error is DioException) {
       switch (error.type) {
         case DioExceptionType.connectionTimeout:
@@ -156,8 +169,20 @@ class ErrorHandler {
     // Try to extract message from exception
     if (error is Exception) {
       final message = error.toString();
+
+      // Handle various exception format patterns
       if (message.contains('Exception:')) {
-        return message.replaceFirst('Exception:', '').trim();
+        final cleanMessage = message.replaceFirst('Exception:', '').trim();
+        // Remove code patterns like (Code: 0)
+        final codePattern = RegExp(r'\s*\(Code:\s*\d+\)$');
+        return cleanMessage.replaceAll(codePattern, '').trim();
+      }
+
+      // If the message itself is user-friendly, return it directly
+      if (!message.toLowerCase().contains('exception') &&
+          !message.toLowerCase().contains('error') &&
+          message.length < 100) {
+        return message;
       }
     }
 

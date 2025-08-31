@@ -203,14 +203,13 @@ class BeaconScanner {
       String beaconType = "UNKNOWN";
       String roomId = "UNKNOWN";
       String deviceId = "UNKNOWN";
-      int txPower = -59;
+      int txPower = -30;
 
-      // Parse FINKI beacons
       if (result.advertisementData.serviceUuids.contains(Guid(_serviceUuid))) {
-        beaconType = "DEDICATED_BEACON";
+        beaconType = "DEDICATED";
         roomId = _extractRoomData(result) ?? "UNKNOWN";
-        deviceId = _extractBeaconId(result) ?? bluetoothId; // Use beacon ID from data, fallback to Bluetooth ID
-        txPower = _extractTxPower(result) ?? -59;
+        deviceId = _extractBeaconId(result) ?? "UNKNOWN";
+        txPower = _extractTxPower(result) ?? -30;
 
         // Validate extracted data
         if (roomId == "UNKNOWN" || roomId.isEmpty) {
@@ -223,10 +222,12 @@ class BeaconScanner {
           beaconType = "PROFESSOR_PHONE";
           roomId = _extractRoomFromDeviceName(platformName);
           deviceId = platformName;
+          txPower = _extractTxPower(result) ?? -30;
         } else if (platformName.contains("FINKI")) {
           beaconType = "GENERIC_DEVICE";
           roomId = _extractRoomFromDeviceName(platformName);
           deviceId = platformName;
+          txPower = _extractTxPower(result) ?? -30;
         } else {
           return null;
         }
@@ -262,7 +263,7 @@ class BeaconScanner {
     }
 
     // Beacon type validation
-    if (!["DEDICATED_BEACON", "PROFESSOR_PHONE", "GENERIC_DEVICE"].contains(detection.beaconType)) {
+    if (!["DEDICATED", "PROFESSOR_PHONE"].contains(detection.beaconType)) {
       return false;
     }
 
@@ -320,7 +321,17 @@ class BeaconScanner {
 
     final data = result.advertisementData.manufacturerData.values.first;
 
-    // Binary format
+    // Try JSON format first (primary format from Arduino beacons)
+    try {
+      final jsonData = String.fromCharCodes(data);
+      final parsed = jsonDecode(jsonData);
+      final txPower = parsed['tx_power']?.toInt();
+      if (txPower != null && txPower >= -40 && txPower <= 20) {
+        return txPower;
+      }
+    } catch (_) {}
+
+    // Binary format fallback
     if (data.length >= 26) {
       try {
         final buffer = Uint8List.fromList(data);
@@ -334,60 +345,20 @@ class BeaconScanner {
       } catch (_) {}
     }
 
-    // JSON fallback
-    try {
-      final jsonData = String.fromCharCodes(data);
-      final parsed = jsonDecode(jsonData);
-      final txPower = parsed['tx_power']?.toInt();
-      if (txPower != null && txPower >= -40 && txPower <= 20) {
-        return txPower;
-      }
-    } catch (_) {}
-
     return null;
   }
 
   /// Extract beacon device ID from beacon data
   String? _extractBeaconId(ScanResult result) {
-    if (result.advertisementData.manufacturerData.isEmpty) {
-      return _extractBeaconIdFromDeviceName(result.device.platformName);
-    }
-
+    if (result.advertisementData.manufacturerData.isEmpty) return null;
     final data = result.advertisementData.manufacturerData.values.first;
 
-    // Try binary format first
-    if (data.length >= 40) {
-      final beaconId = _parseString(data, 16, 8); // Beacon ID is at offset 16
-      if (beaconId.isNotEmpty && beaconId != "UNKNOWN") return beaconId;
-    }
-
-    // JSON fallback
     try {
       final jsonData = String.fromCharCodes(data);
       final parsed = jsonDecode(jsonData);
-      final beaconId = parsed['beacon_id']?.toString();
-      if (beaconId != null && beaconId.isNotEmpty) return beaconId;
+      final deviceId = parsed['beacon_id']?.toString();
+      return deviceId;
     } catch (_) {}
-
-    // Device name fallback
-    return _extractBeaconIdFromDeviceName(result.device.platformName);
-  }
-
-  /// Extract beacon ID from device name
-  String? _extractBeaconIdFromDeviceName(String deviceName) {
-    if (deviceName.contains("FINKI")) {
-      // Try to find a pattern like BCN01, BEACON01, etc.
-      final beaconPattern = RegExp(r'(BCN\d+|BEACON\d+)', caseSensitive: false);
-      final match = beaconPattern.firstMatch(deviceName);
-      if (match != null) {
-        return match.group(1)?.toUpperCase();
-      }
-
-      // Fallback: use the full device name if it's reasonably short
-      if (deviceName.length <= 20) {
-        return deviceName;
-      }
-    }
 
     return null;
   }
@@ -429,7 +400,6 @@ class BeaconScanner {
     if (rssi == 0 || rssi > 0) return -1.0;
     if (rssi > txPower) return 0.3; // Minimum distance
 
-    // Enhanced indoor path loss model
     const double pathLossExponent = 2.2; // Optimized for classroom environments
     const double environmentFactor = 1.5; // Account for obstacles
 
@@ -455,7 +425,6 @@ class BeaconScanner {
     required String studentIndex,
     required String sessionToken,
   }) {
-    // Validate inputs
     if (studentIndex.isEmpty) throw ArgumentError('Student index cannot be empty');
     if (sessionToken.isEmpty) throw ArgumentError('Session token cannot be empty');
     if (!_isValidDetection(detection)) throw ArgumentError('Invalid beacon detection');
@@ -473,7 +442,6 @@ class BeaconScanner {
     };
   }
 
-  /// Get scanner status for monitoring
   Map<String, dynamic> getStatus() {
     return {
       'isScanning': _isScanning,

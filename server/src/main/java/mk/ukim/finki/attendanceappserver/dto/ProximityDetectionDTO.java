@@ -1,6 +1,7 @@
 package mk.ukim.finki.attendanceappserver.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -17,5 +18,5 @@ public class ProximityDetectionDTO {
     private String proximityLevel; // NEAR, MEDIUM, FAR, OUT_OF_RANGE
     private Double estimatedDistance;
     private LocalDateTime detectionTimestamp;
-    private String beaconType; // DEDICATED_BEACON, PROFESSOR_PHONE
+    private String beaconType; // DEDICATED, PROFESSOR_PHONE
 }

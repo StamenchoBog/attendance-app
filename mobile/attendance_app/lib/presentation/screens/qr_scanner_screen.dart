@@ -1,6 +1,7 @@
 import 'package:attendance_app/core/services/ble_service.dart';
 import 'package:attendance_app/core/theme/app_text_styles.dart';
 import 'package:attendance_app/core/utils/ui_helpers.dart';
+import 'package:attendance_app/core/utils/error_handler.dart';
 import 'package:attendance_app/core/constants/app_constants.dart';
 import 'package:attendance_app/core/theme/color_palette.dart';
 import 'package:attendance_app/data/repositories/attendance_repository.dart';
@@ -239,8 +240,8 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
 
           final roomId = beaconDetection.roomId;
           final proximityLevel = beaconDetection.proximity.name;
-          final realRssi = beaconDetection.rssi; // Real RSSI from Arduino beacon
-          final realDistance = beaconDetection.estimatedDistance; // Real calculated distance
+          final realRssi = beaconDetection.rssi;
+          final realDistance = beaconDetection.estimatedDistance;
 
           // Validate beacon data
           if (roomId.isEmpty || proximityLevel.isEmpty) {
@@ -256,12 +257,10 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
               beaconDeviceId: beaconDetection.deviceId,
               detectedRoomId: roomId,
               rssi: realRssi,
-              // Using REAL RSSI from Arduino beacon
               proximityLevel: proximityLevel.toUpperCase(),
               estimatedDistance: realDistance,
-              // Using REAL calculated distance
               detectionTimestamp: beaconDetection.timestamp,
-              beaconType: 'ARDUINO_R4_BEACON',
+              beaconType: beaconDetection.beaconType.toUpperCase(),
             );
 
             proximityDetections = [proximityRequest];
@@ -269,9 +268,11 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
 
             setState(() {
               _statusMessage =
-                  'Beacon detected! Room: $roomId, RSSI: ${realRssi}dBm, Distance: ${realDistance.toStringAsFixed(1)}m';
+                  'Beacon detected! Room: $roomId, RSSI: ${realRssi}dBm, Distance: ${realDistance.toStringAsFixed(1)}m, Type: ${beaconDetection.beaconType}';
             });
-            _logger.i('Proximity data collected successfully with real RSSI: $realRssi dBm');
+            _logger.i(
+              'Proximity data collected successfully with real RSSI: $realRssi dBm, BeaconType: ${beaconDetection.beaconType}',
+            );
           }
         } else {
           _logger.w('No beacon detected - proceeding with attendance registration without proximity data');
@@ -365,8 +366,13 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
         dialogTitle = 'Timeout Error';
         errorMessage = 'The request took too long to complete. Please try scanning the QR code again.';
       } else if (errorMessage.contains('ApiException') || errorMessage.contains('DioException')) {
-        dialogTitle = 'Server Error';
-        errorMessage = 'An error occurred while processing your request. Please try again.';
+        dialogTitle = 'Connection Error';
+        // Use the ErrorHandler to get a clean, user-friendly message
+        final cleanMessage = ErrorHandler.getErrorMessage(errorMessage);
+        errorMessage =
+            cleanMessage.isNotEmpty
+                ? cleanMessage
+                : 'Unable to connect to the server. Please check your internet connection and try again.';
       } else if (errorMessage.contains('Registration failed')) {
         dialogTitle = 'Registration Failed';
         errorMessage = 'Failed to register attendance. Please ensure the QR code is valid and try again.';

@@ -1,6 +1,6 @@
 enum ProximityLevel { near, medium, far, outOfRange }
 
-enum AttendanceVerificationStatus { pending, verified, failed, timeout }
+enum AttendanceVerificationStatus { pending_verification, present, failed, timeout }
 
 class PermissionRequestResult {
   final bool success;

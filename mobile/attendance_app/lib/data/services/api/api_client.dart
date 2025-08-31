@@ -154,23 +154,27 @@ class ApiClient {
       case DioExceptionType.receiveTimeout:
         return const ApiException(
           statusCode: 408,
-          message: 'Connection timeout. Please check your internet connection.',
+          message: 'Connection timeout. Please check your internet connection and try again.',
           type: ApiExceptionType.timeout,
         );
       case DioExceptionType.badResponse:
         return ApiException(
           statusCode: error.response?.statusCode ?? 0,
-          message: error.response?.data?['message'] ?? 'Server error occurred',
+          message: error.response?.data?['message'] ?? 'Server error occurred. Please try again later.',
           type: ApiExceptionType.server,
         );
       case DioExceptionType.cancel:
         return const ApiException(statusCode: 0, message: 'Request was cancelled', type: ApiExceptionType.cancel);
       case DioExceptionType.connectionError:
-        return const ApiException(statusCode: 0, message: 'No internet connection', type: ApiExceptionType.network);
+        return const ApiException(
+          statusCode: 0,
+          message: 'Unable to connect to the server. Please check your internet connection and try again.',
+          type: ApiExceptionType.network,
+        );
       default:
         return ApiException(
           statusCode: 0,
-          message: error.message ?? 'Unknown error occurred',
+          message: error.message ?? 'An unexpected error occurred. Please try again.',
           type: ApiExceptionType.unknown,
         );
     }

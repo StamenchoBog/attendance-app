@@ -9,7 +9,7 @@ class ProximityDetectionRequest {
   final String proximityLevel; // NEAR, MEDIUM, FAR, OUT_OF_RANGE
   final double estimatedDistance;
   final DateTime detectionTimestamp;
-  final String beaconType; // DEDICATED_BEACON, PROFESSOR_PHONE
+  final String beaconType; // DEDICATED, PROFESSOR_PHONE
 
   ProximityDetectionRequest({
     required this.studentIndex,
@@ -65,7 +65,7 @@ class ProximityVerificationRequest {
 
 class ProximityVerificationResponse {
   final bool verificationSuccess;
-  final String verificationStatus; // SUCCESS, FAILED, TIMEOUT, WRONG_ROOM
+  final String verificationStatus; // 'PENDING', 'VERIFIED', 'FAILED', 'TIMEOUT'
   final String detectedRoomId;
   final String expectedRoomId;
   final double averageDistance;
@@ -193,7 +193,7 @@ class ProximityDetectionDTO {
   final String proximityLevel; // NEAR, MEDIUM, FAR, OUT_OF_RANGE
   final double estimatedDistance;
   final DateTime detectionTimestamp;
-  final String beaconType; // DEDICATED_BEACON, PROFESSOR_PHONE
+  final String beaconType; // DEDICATED, PROFESSOR_PHONE
 
   ProximityDetectionDTO({
     required this.studentIndex,
@@ -222,7 +222,7 @@ class ProximityDetectionDTO {
       proximityLevel: detection.proximity.name.toUpperCase(),
       estimatedDistance: detection.estimatedDistance,
       detectionTimestamp: detection.timestamp,
-      beaconType: 'DEDICATED_BEACON', // Default type, can be overridden if needed
+      beaconType: detection.beaconType,
     );
   }
 

@@ -3,8 +3,8 @@
 
 -- Add status and proximity to student_attendance with proper constraints
 ALTER TABLE student_attendance
-ADD COLUMN IF NOT EXISTS status VARCHAR(255) NOT NULL DEFAULT 'PRESENT'
-CONSTRAINT chk_attendance_status CHECK (status IN ('PRESENT', 'ABSENT', 'LATE', 'PENDING_VERIFICATION', 'EXCUSED'));
+ADD COLUMN IF NOT EXISTS status VARCHAR(255) NOT NULL DEFAULT 'PENDING_VERIFICATION'
+CONSTRAINT chk_attendance_status CHECK (status IN ('PRESENT', 'ABSENT', 'LATE', 'PENDING_VERIFICATION'));
 
 ALTER TABLE student_attendance
 ADD COLUMN IF NOT EXISTS proximity VARCHAR(255);

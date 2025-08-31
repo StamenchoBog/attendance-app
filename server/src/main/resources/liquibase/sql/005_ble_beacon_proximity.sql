@@ -11,8 +11,8 @@ CREATE TABLE IF NOT EXISTS proximity_verification_log (
     proximity_level VARCHAR(20) CHECK (proximity_level IN ('NEAR', 'MEDIUM', 'FAR', 'OUT_OF_RANGE')),
     estimated_distance DECIMAL(5,2),
     verification_timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    verification_status VARCHAR(20) CHECK (verification_status IN ('SUCCESS', 'FAILED', 'TIMEOUT', 'WRONG_ROOM')),
-    beacon_type VARCHAR(30) CHECK (beacon_type IN ('DEDICATED_BEACON', 'PROFESSOR_PHONE')),
+    verification_status VARCHAR(20) CHECK (verification_status IN ('PENDING', 'VERIFIED', 'FAILED', 'TIMEOUT')),
+    beacon_type VARCHAR(30) CHECK (beacon_type IN ('DEDICATED', 'PROFESSOR_PHONE')),
     session_token VARCHAR(255)
 );
 
