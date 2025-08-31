@@ -32,7 +32,7 @@ class ProximityAttendanceService {
   /// Start comprehensive attendance verification with detailed logging
   Future<void> startAttendanceVerification({required String sessionId, Duration? verificationDuration}) async {
     try {
-      _verificationStatusController.add(AttendanceVerificationStatus.pending_verification);
+      _verificationStatusController.add(AttendanceVerificationStatus.pendingVerification);
 
       final duration = verificationDuration ?? defaultVerificationDuration;
       bool verificationPassed = false;

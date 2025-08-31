@@ -134,7 +134,7 @@ class _ProximityAttendanceScreenState extends State<ProximityAttendanceScreen> w
         _showFailureDialog("Verification failed - please ensure you remain in the classroom");
       case AttendanceVerificationStatus.timeout:
         _showFailureDialog("Verification timeout - beacon not detected consistently");
-      case AttendanceVerificationStatus.pending_verification:
+      case AttendanceVerificationStatus.pendingVerification:
         break;
     }
   }
