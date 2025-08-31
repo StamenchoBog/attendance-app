@@ -1,16 +1,18 @@
 # Attendance Application
 
-A modern, secure mobile attendance system for universities that combines QR code scanning with Bluetooth proximity verification to prevent attendance fraud and streamline classroom management.
+A modern, secure mobile attendance system for universities that combines QR code scanning with Bluetooth proximity verification to prevent attendance
+fraud and streamline classroom management.
 
 ## 🎯 Overview
 
 This system replaces traditional paper-based attendance with a three-component solution:
 
 - **📱 Flutter Mobile App**: Cross-platform interface for students and professors
-- **🖥️ Spring Boot API**: Reactive backend with PostgreSQL database  
+- **🖥️ Spring Boot API**: Reactive backend with PostgreSQL database
 - **📡 Arduino BLE Beacons**: Classroom proximity verification devices
 
 ### Key Innovation
+
 **Dual-layer security**: QR codes for session identification + Bluetooth proximity verification to ensure physical presence in the classroom.
 
 ## 🏗️ Architecture
@@ -32,10 +34,12 @@ This system replaces traditional paper-based attendance with a three-component s
 ## ⚡ Quick Start
 
 ### Prerequisites
+
 - Flutter 3.x, Java 21+, Docker
 - Physical device with camera and Bluetooth
 
 ### Run the System
+
 ```bash
 # 1. Start backend
 cd server && ./gradlew bootRun
@@ -77,32 +81,52 @@ attendance-app/
 ## 📖 Documentation
 
 - **[📱 Mobile App Guide](./mobile/attendance_app/README.md)** - Development setup and features
-- **[🖥️ Backend API Docs](./server/README.md)** - Server configuration and endpoints  
+- **[🖥️ Backend API Docs](./server/README.md)** - Server configuration and endpoints
 - **[📡 Beacon Setup](./ble-beacon/arduino/README.md)** - Hardware deployment guide
 - **[🎯 Technical Deep-Dive](./PRESENTATION_README.md)** - Architecture and implementation details
 
 ## 🚀 Deployment
 
 ### Production Environment
+
 - **Mobile**: Android APK + iOS IPA distribution
 - **Backend**: Docker containerization with PostgreSQL
 - **Beacons**: Per-classroom Arduino deployment (~$30/room)
 
 ### Scalability Targets
+
 - 1,000+ concurrent users
-- 50,000+ daily attendance records  
+- 50,000+ daily attendance records
 - 200+ classroom beacon network
 
 ## 📊 Tech Stack
 
-| Component | Technologies |
-|-----------|-------------|
-| **Frontend** | Flutter 3, Dart, Provider |
-| **Backend** | Java 21, Spring Boot 3, WebFlux, R2DBC |
-| **Database** | PostgreSQL, Liquibase migrations |
+| Component    | Technologies                               |
+|--------------|--------------------------------------------|
+| **Frontend** | Flutter 3, Dart, Provider                  |
+| **Backend**  | Java 21, Spring Boot 5, WebFlux, R2DBC     |
+| **Database** | PostgreSQL, Liquibase migrations           |
 | **Security** | JWT, Device fingerprinting, RSSI proximity |
-| **IoT** | Arduino UNO R4 WiFi, Bluetooth LE 5.0 |
+| **IoT**      | Arduino UNO R4 WiFi, Bluetooth LE 5.0      |
+
+## Application's visual design
+
+Some pictures are listed below, more of them can be viewed [here](./mockups/demo).
+
+<p align="center">
+    <img src="./mockups/demo/login_screen.jpg" width="200"/>
+    <img src="./mockups/demo/student_dashboard.jpg" width="200"/>
+    <img src="./mockups/demo/student_dashboard_course_details_not_verified.jpg" width="200"/>
+    <img src="./mockups/demo/student_calendar_overview.jpg" width="200"/>
+    <img src="./mockups/demo/student_quick_attendance_verification.jpg" width="200"/>
+    <img src="./mockups/demo/student_profile.jpg" width="200"/>
+    <img src="./mockups/demo/student_profile_language_change.jpg" width="200"/>
+    <img src="mockups/demo/student_profile_device_match.jpg" width="200">
+    <img src="mockups/demo/professor_dashboard.jpg" width="200">
+    <img src="mockups/demo/professor_course_details_overview.jpg" width="200">
+</p>
 
 ## 📄 License
 
-Academic project developed for the purpose of a course at **Faculty of Computer Science and Engineering (FINKI)**, University Ss. Cyril and Methodius, Skopje.
+Academic project developed for the purpose of a course at **Faculty of Computer Science and Engineering (FINKI)**, University Ss. Cyril and Methodius,
+Skopje.
