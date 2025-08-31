@@ -15,7 +15,7 @@ class CustomBottomNavBar extends StatelessWidget {
       showUnselectedLabels: false,
       elevation: 0.0,
       // Flat look
-      backgroundColor: Colors.white,
+      backgroundColor: ColorPalette.pureWhite,
       // Bar background
       type: BottomNavigationBarType.fixed,
       // Ensure items are evenly spaced

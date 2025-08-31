@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:attendance_app/core/theme/color_palette.dart';
+import 'package:attendance_app/core/theme/app_text_styles.dart';
+import 'package:attendance_app/core/utils/ui_helpers.dart';
+import 'package:attendance_app/core/constants/app_constants.dart';
 import 'package:logger/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -33,7 +36,7 @@ class _LanguageSettingsScreenState extends State<LanguageSettingsScreen> with Ti
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(duration: const Duration(milliseconds: 300), vsync: this);
+    _animationController = AnimationController(duration: AppConstants.animationMedium, vsync: this);
     _fadeAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
@@ -67,7 +70,7 @@ class _LanguageSettingsScreenState extends State<LanguageSettingsScreen> with Ti
       });
 
       // Simulate language change process
-      await Future.delayed(const Duration(milliseconds: 500));
+      await Future.delayed(AppConstants.animationSlow);
 
       // Update UI
       setState(() {
@@ -87,15 +90,15 @@ class _LanguageSettingsScreenState extends State<LanguageSettingsScreen> with Ti
           SnackBar(
             content: Row(
               children: [
-                Icon(Icons.check_circle, color: Colors.white, size: 20.sp),
-                SizedBox(width: 8.w),
-                Text('Language preference saved'),
+                Icon(Icons.check_circle, color: Colors.white, size: AppConstants.iconSizeMedium),
+                UIHelpers.horizontalSpace(AppConstants.spacing8),
+                const Text('Language preference saved'),
               ],
             ),
             backgroundColor: Colors.green,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
-            margin: EdgeInsets.all(16.w),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppConstants.borderRadius8)),
+            margin: EdgeInsets.all(AppConstants.spacing16),
           ),
         );
       }
@@ -112,7 +115,7 @@ class _LanguageSettingsScreenState extends State<LanguageSettingsScreen> with Ti
       appBar: AppBar(
         title: Text(
           'Language Settings',
-          style: TextStyle(color: ColorPalette.textPrimary, fontWeight: FontWeight.w600, fontSize: 18.sp),
+          style: AppTextStyles.heading3.copyWith(color: ColorPalette.textPrimary, fontWeight: FontWeight.w600),
         ),
         centerTitle: true,
         backgroundColor: Colors.white,
@@ -130,45 +133,48 @@ class _LanguageSettingsScreenState extends State<LanguageSettingsScreen> with Ti
             Container(
               width: double.infinity,
               color: Colors.white,
-              padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 20.h),
+              padding: EdgeInsets.symmetric(horizontal: AppConstants.spacing20, vertical: AppConstants.spacing20),
               child: Column(
                 children: [
                   const ProfileHeaderWidget(),
-                  SizedBox(height: 20.h),
+                  UIHelpers.verticalSpace(AppConstants.spacing20),
                   Container(
-                    padding: EdgeInsets.all(16.w),
+                    padding: EdgeInsets.all(AppConstants.spacing16),
                     decoration: BoxDecoration(
                       color: ColorPalette.lightestBlue,
-                      borderRadius: BorderRadius.circular(12.r),
-                      border: Border.all(color: ColorPalette.lightBlue.withOpacity(0.3)),
+                      borderRadius: BorderRadius.circular(AppConstants.borderRadius12),
+                      border: Border.all(color: ColorPalette.lightBlue.withValues(alpha: 0.3)),
                     ),
                     child: Row(
                       children: [
                         Container(
-                          padding: EdgeInsets.all(8.w),
+                          padding: EdgeInsets.all(AppConstants.spacing8),
                           decoration: BoxDecoration(
-                            color: ColorPalette.darkBlue.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8.r),
+                            color: ColorPalette.darkBlue.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(AppConstants.borderRadius8),
                           ),
-                          child: Icon(CupertinoIcons.globe, color: ColorPalette.darkBlue, size: 24.sp),
+                          child: Icon(
+                            CupertinoIcons.globe,
+                            color: ColorPalette.darkBlue,
+                            size: AppConstants.iconSizeMedium,
+                          ),
                         ),
-                        SizedBox(width: 12.w),
+                        UIHelpers.horizontalSpace(AppConstants.spacing12),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
                                 'Select Language',
-                                style: TextStyle(
-                                  fontSize: 16.sp,
+                                style: AppTextStyles.bodyLarge.copyWith(
                                   fontWeight: FontWeight.w600,
                                   color: ColorPalette.textPrimary,
                                 ),
                               ),
-                              SizedBox(height: 4.h),
+                              UIHelpers.verticalSpace(AppConstants.spacing4),
                               Text(
                                 'Choose your preferred language for the app interface',
-                                style: TextStyle(fontSize: 13.sp, color: ColorPalette.textSecondary),
+                                style: AppTextStyles.caption.copyWith(color: ColorPalette.textSecondary),
                               ),
                             ],
                           ),
@@ -180,45 +186,46 @@ class _LanguageSettingsScreenState extends State<LanguageSettingsScreen> with Ti
               ),
             ),
 
-            SizedBox(height: 16.h),
+            UIHelpers.verticalSpace(AppConstants.spacing16),
 
             // Language Options Section
             Expanded(
               child: Container(
-                margin: EdgeInsets.symmetric(horizontal: 20.w),
+                margin: EdgeInsets.symmetric(horizontal: AppConstants.spacing20),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(16.r),
+                  borderRadius: BorderRadius.circular(AppConstants.borderRadius16),
                   boxShadow: [
-                    BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 2)),
+                    BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 2)),
                   ],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Padding(
-                      padding: EdgeInsets.all(20.w),
+                      padding: EdgeInsets.all(AppConstants.spacing20),
                       child: Row(
                         children: [
                           Text(
                             'Available Languages',
-                            style: TextStyle(
-                              fontSize: 16.sp,
+                            style: AppTextStyles.bodyLarge.copyWith(
                               fontWeight: FontWeight.w600,
                               color: ColorPalette.textPrimary,
                             ),
                           ),
                           const Spacer(),
                           Container(
-                            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: AppConstants.spacing8,
+                              vertical: AppConstants.spacing4,
+                            ),
                             decoration: BoxDecoration(
                               color: ColorPalette.lightestBlue,
-                              borderRadius: BorderRadius.circular(12.r),
+                              borderRadius: BorderRadius.circular(AppConstants.borderRadius12),
                             ),
                             child: Text(
                               '${availableLanguages.length} languages',
-                              style: TextStyle(
-                                fontSize: 12.sp,
+                              style: AppTextStyles.caption.copyWith(
                                 color: ColorPalette.darkBlue,
                                 fontWeight: FontWeight.w500,
                               ),
@@ -229,9 +236,9 @@ class _LanguageSettingsScreenState extends State<LanguageSettingsScreen> with Ti
                     ),
                     Expanded(
                       child: ListView.separated(
-                        padding: EdgeInsets.symmetric(horizontal: 20.w),
+                        padding: EdgeInsets.symmetric(horizontal: AppConstants.spacing20),
                         itemCount: availableLanguages.length,
-                        separatorBuilder: (context, index) => Divider(height: 1, color: Colors.grey.shade200),
+                        separatorBuilder: (context, index) => UIHelpers.divider,
                         itemBuilder: (context, index) {
                           final lang = availableLanguages[index];
                           final isSelected = _selectedLanguageCode == lang['code'];
@@ -252,23 +259,22 @@ class _LanguageSettingsScreenState extends State<LanguageSettingsScreen> with Ti
 
                     // Footer with implementation note
                     Container(
-                      padding: EdgeInsets.all(20.w),
+                      padding: EdgeInsets.all(AppConstants.spacing20),
                       decoration: BoxDecoration(
                         color: Colors.grey.shade50,
                         borderRadius: BorderRadius.only(
-                          bottomLeft: Radius.circular(16.r),
-                          bottomRight: Radius.circular(16.r),
+                          bottomLeft: Radius.circular(AppConstants.borderRadius16),
+                          bottomRight: Radius.circular(AppConstants.borderRadius16),
                         ),
                       ),
                       child: Row(
                         children: [
-                          Icon(CupertinoIcons.info_circle, color: Colors.orange, size: 16.sp),
-                          SizedBox(width: 8.w),
+                          Icon(CupertinoIcons.info_circle, color: Colors.orange, size: AppConstants.iconSizeSmall),
+                          UIHelpers.horizontalSpace(AppConstants.spacing8),
                           Expanded(
                             child: Text(
                               'Language selection is ready for implementation. Restart app after changing language.',
-                              style: TextStyle(
-                                fontSize: 12.sp,
+                              style: AppTextStyles.caption.copyWith(
                                 color: ColorPalette.textSecondary,
                                 fontStyle: FontStyle.italic,
                               ),
@@ -282,7 +288,7 @@ class _LanguageSettingsScreenState extends State<LanguageSettingsScreen> with Ti
               ),
             ),
 
-            SizedBox(height: 20.h),
+            UIHelpers.verticalSpace(AppConstants.spacing20),
           ],
         ),
       ),
@@ -300,14 +306,14 @@ class _LanguageSettingsScreenState extends State<LanguageSettingsScreen> with Ti
     required VoidCallback onTap,
   }) {
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
+      duration: AppConstants.animationFast,
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: _isChangingLanguage ? null : onTap,
-          borderRadius: BorderRadius.circular(8.r),
+          borderRadius: BorderRadius.circular(AppConstants.borderRadius8),
           child: Container(
-            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
+            padding: EdgeInsets.symmetric(horizontal: AppConstants.spacing16, vertical: AppConstants.spacing16),
             child: Row(
               children: [
                 // Flag emoji
@@ -315,15 +321,15 @@ class _LanguageSettingsScreenState extends State<LanguageSettingsScreen> with Ti
                   width: 40.w,
                   height: 40.w,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8.r),
+                    borderRadius: BorderRadius.circular(AppConstants.borderRadius8),
                     border: Border.all(
                       color: isSelected ? ColorPalette.darkBlue : Colors.grey.shade300,
                       width: isSelected ? 2 : 1,
                     ),
                   ),
-                  child: Center(child: Text(flag, style: TextStyle(fontSize: 20.sp))),
+                  child: Center(child: Text(flag, style: TextStyle(fontSize: AppConstants.fontSizeHeading))),
                 ),
-                SizedBox(width: 16.w),
+                UIHelpers.horizontalSpace(AppConstants.spacing16),
 
                 // Language info
                 Expanded(
@@ -334,32 +340,31 @@ class _LanguageSettingsScreenState extends State<LanguageSettingsScreen> with Ti
                         children: [
                           Text(
                             languageName,
-                            style: TextStyle(
-                              fontSize: 15.sp,
+                            style: AppTextStyles.bodyMedium.copyWith(
                               fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                               color: ColorPalette.textPrimary,
                             ),
                           ),
                           if (isDefault) ...[
-                            SizedBox(width: 8.w),
+                            UIHelpers.horizontalSpace(AppConstants.spacing8),
                             Container(
-                              padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+                              padding: EdgeInsets.symmetric(horizontal: AppConstants.spacing8, vertical: 2.h),
                               decoration: BoxDecoration(
-                                color: Colors.green.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(4.r),
+                                color: Colors.green.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(AppConstants.borderRadius4),
                               ),
                               child: Text(
                                 'DEFAULT',
-                                style: TextStyle(fontSize: 10.sp, fontWeight: FontWeight.w600, color: Colors.green),
+                                style: AppTextStyles.caption.copyWith(fontWeight: FontWeight.w600, color: Colors.green),
                               ),
                             ),
                           ],
                         ],
                       ),
-                      SizedBox(height: 2.h),
+                      UIHelpers.verticalSpace(2.h),
                       Text(
                         '$nativeName • $languageCode',
-                        style: TextStyle(fontSize: 13.sp, color: ColorPalette.textSecondary),
+                        style: AppTextStyles.caption.copyWith(color: ColorPalette.textSecondary),
                       ),
                     ],
                   ),
@@ -368,27 +373,30 @@ class _LanguageSettingsScreenState extends State<LanguageSettingsScreen> with Ti
                 // Selection indicator
                 if (_isChangingLanguage && isSelected)
                   SizedBox(
-                    width: 20.w,
-                    height: 20.w,
-                    child: CircularProgressIndicator(
+                    width: AppConstants.iconSizeMedium,
+                    height: AppConstants.iconSizeMedium,
+                    child: const CircularProgressIndicator(
                       strokeWidth: 2,
                       valueColor: AlwaysStoppedAnimation<Color>(ColorPalette.darkBlue),
                     ),
                   )
                 else if (isSelected)
                   Container(
-                    width: 24.w,
-                    height: 24.w,
-                    decoration: BoxDecoration(color: ColorPalette.darkBlue, borderRadius: BorderRadius.circular(12.r)),
-                    child: Icon(CupertinoIcons.check_mark, color: Colors.white, size: 14.sp),
+                    width: AppConstants.iconSizeMedium,
+                    height: AppConstants.iconSizeMedium,
+                    decoration: BoxDecoration(
+                      color: ColorPalette.darkBlue,
+                      borderRadius: BorderRadius.circular(AppConstants.borderRadius12),
+                    ),
+                    child: Icon(CupertinoIcons.check_mark, color: Colors.white, size: AppConstants.iconSizeSmall),
                   )
                 else
                   Container(
-                    width: 24.w,
-                    height: 24.w,
+                    width: AppConstants.iconSizeMedium,
+                    height: AppConstants.iconSizeMedium,
                     decoration: BoxDecoration(
                       border: Border.all(color: Colors.grey.shade300),
-                      borderRadius: BorderRadius.circular(12.r),
+                      borderRadius: BorderRadius.circular(AppConstants.borderRadius12),
                     ),
                   ),
               ],

@@ -1,9 +1,9 @@
 enum ReportType {
-  bug('bug'),
-  featureRequest('featureRequest'),
-  attendanceIssue('attendanceIssue'),
-  deviceIssue('deviceIssue'),
-  other('other');
+  bug('BUG'),
+  featureRequest('FEATURE_REQUEST'),
+  attendanceIssue('ATTENDANCE_ISSUE'),
+  deviceIssue('DEVICE_ISSUE'),
+  other('OTHER');
 
   const ReportType(this.value);
 
@@ -18,27 +18,9 @@ enum ReportType {
     throw ArgumentError('Unknown report type: $value');
   }
 
-  @override
-  String toString() => value;
-}
-
-enum ReportPriority {
-  low('low'),
-  medium('medium'),
-  high('high'),
-  critical('critical');
-
-  const ReportPriority(this.value);
-
-  final String value;
-
-  static ReportPriority fromString(String value) {
-    for (ReportPriority priority in ReportPriority.values) {
-      if (priority.value == value) {
-        return priority;
-      }
-    }
-    throw ArgumentError('Unknown report priority: $value');
+  String get serverValue {
+    // Return the UPPER_SNAKE_CASE values expected by the API
+    return value;
   }
 
   @override
@@ -62,6 +44,34 @@ enum ReportStatus {
       }
     }
     throw ArgumentError('Unknown report status: $value');
+  }
+
+  @override
+  String toString() => value;
+}
+
+enum ReportPriority {
+  low('LOW'),
+  medium('MEDIUM'),
+  high('HIGH'),
+  critical('CRITICAL');
+
+  const ReportPriority(this.value);
+
+  final String value;
+
+  static ReportPriority fromString(String value) {
+    for (ReportPriority priority in ReportPriority.values) {
+      if (priority.value == value) {
+        return priority;
+      }
+    }
+    throw ArgumentError('Unknown report priority: $value');
+  }
+
+  String get serverValue {
+    // Return the UPPERCASE values expected by the API
+    return value;
   }
 
   @override

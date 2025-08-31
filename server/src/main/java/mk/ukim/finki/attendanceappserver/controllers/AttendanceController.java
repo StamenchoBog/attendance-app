@@ -1,11 +1,7 @@
 package mk.ukim.finki.attendanceappserver.controllers;
 
 import lombok.AllArgsConstructor;
-import mk.ukim.finki.attendanceappserver.dto.AttendanceConfirmationRequestDTO;
-import mk.ukim.finki.attendanceappserver.dto.AttendanceRegistrationRequestDTO;
-import mk.ukim.finki.attendanceappserver.dto.ProximityDetectionDTO;
-import mk.ukim.finki.attendanceappserver.dto.ProximityVerificationRequestDTO;
-import mk.ukim.finki.attendanceappserver.dto.ProximityVerificationResponseDTO;
+import mk.ukim.finki.attendanceappserver.dto.*;
 import mk.ukim.finki.attendanceappserver.dto.db.CustomStudentAttendance;
 import mk.ukim.finki.attendanceappserver.dto.generic.APIResponse;
 import mk.ukim.finki.attendanceappserver.services.AttendanceService;
@@ -59,38 +55,12 @@ public class AttendanceController {
                 .map(APIResponse::success);
     }
 
-    @GetMapping("/by-student/{studentIndex}/previous-30-days")
-    public Mono<APIResponse<List<CustomStudentAttendance>>> getStudentAttendanceForStudentIndex(@PathVariable String studentIndex) {
-        LOGGER.info("Request for retrieving student attendance for student index [{}] for the previous 30 days.", studentIndex);
+    @GetMapping(value = "/student/{studentIndex}/last-30-days")
+    public Mono<APIResponse<List<CustomStudentAttendance>>> getStudentAttendancesForLast30Days(@PathVariable String studentIndex) {
+        LOGGER.info("Request for retrieving student attendance for student with ID [{}] for the last 30 days", studentIndex);
         return attendanceService.getStudentAttendancesForStudentIndexForPrevious30Days(studentIndex)
                 .collectList()
                 .map(APIResponse::success);
-    }
-
-    // ENHANCED BLE BEACON ENDPOINTS WITH LOGGING
-
-    /**
-     * Comprehensive BLE beacon proximity verification endpoint
-     * Processes multiple proximity readings collected during 10-30s verification period
-     */
-    @PostMapping("/verify-proximity")
-    public Mono<APIResponse<ProximityVerificationResponseDTO>> verifyProximity(@RequestBody ProximityVerificationRequestDTO dto) {
-        LOGGER.info("Request for comprehensive proximity verification for student [{}] with {} detections",
-                dto.getStudentIndex(), dto.getProximityDetections().size());
-        return attendanceService.verifyProximityWithBeacon(dto)
-                .map(APIResponse::success);
-    }
-
-    /**
-     * Log individual proximity detection during real-time verification
-     * Called by mobile app every few seconds during verification process
-     */
-    @PostMapping("/log-proximity-detection")
-    public Mono<APIResponse<Void>> logProximityDetection(@RequestBody ProximityDetectionDTO dto) {
-        LOGGER.debug("Logging proximity detection for student [{}]: {} at {}m",
-                dto.getStudentIndex(), dto.getProximityLevel(), dto.getEstimatedDistance());
-        return attendanceService.logProximityDetection(dto)
-                .then(Mono.just(APIResponse.<Void>success(null)));
     }
 
     /**
@@ -98,7 +68,7 @@ public class AttendanceController {
      * Useful for professors to analyze classroom beacon effectiveness
      */
     @GetMapping("/proximity-analytics/{roomId}")
-    public Mono<APIResponse<ProximityVerificationService.RoomProximityAnalyticsDTO>> getRoomProximityAnalytics(
+    public Mono<APIResponse<RoomProximityAnalyticsDTO>> getRoomProximityAnalytics(
             @PathVariable String roomId,
             @RequestParam(required = false, defaultValue = "7") Integer daysBack) {
 
@@ -109,4 +79,3 @@ public class AttendanceController {
                 .map(APIResponse::success);
     }
 }
-

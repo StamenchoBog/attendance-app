@@ -8,8 +8,10 @@ import mk.ukim.finki.attendanceappserver.dto.ReportSubmissionDTO;
 import mk.ukim.finki.attendanceappserver.dto.generic.APIResponse;
 import mk.ukim.finki.attendanceappserver.domain.repositories.ReportRepository;
 import mk.ukim.finki.attendanceappserver.domain.models.Report;
+
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -52,21 +54,23 @@ public class ReportService {
         if (reportDTO.getPriority() == null) {
             return Mono.error(new IllegalArgumentException("Priority is required"));
         }
+        if (!StringUtils.hasText(reportDTO.getStudentIndex())) {
+            return Mono.error(new IllegalArgumentException("Student index is required"));
+        }
 
         return Mono.just(reportDTO);
     }
 
     private Mono<Report> createAndSaveReport(ReportSubmissionDTO reportDTO) {
         Report report = Report.builder()
-                .id(UUID.randomUUID())
                 .reportType(reportDTO.getReportType())
                 .priority(reportDTO.getPriority())
                 .title(reportDTO.getTitle().trim())
                 .description(reportDTO.getDescription().trim())
                 .stepsToReproduce(StringUtils.hasText(reportDTO.getStepsToReproduce())
-                    ? reportDTO.getStepsToReproduce().trim() : null)
-                .userInfo(reportDTO.getUserInfo())
-                .deviceInfo(reportDTO.getDeviceInfo())
+                        ? reportDTO.getStepsToReproduce().trim() : null)
+                .studentIndex(reportDTO.getStudentIndex())
+                .deviceId(reportDTO.getDeviceId())
                 .status(ReportStatus.NEW)
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
@@ -91,8 +95,8 @@ public class ReportService {
         return Mono.fromCallable(() -> {
             log.debug("Fetching all reports");
             return APIResponse.success(
-                reportRepository.findAll()
-                    .sort((r1, r2) -> r2.getCreatedAt().compareTo(r1.getCreatedAt()))
+                    reportRepository.findAll()
+                            .sort((r1, r2) -> r2.getCreatedAt().compareTo(r1.getCreatedAt()))
             );
         }).onErrorReturn(APIResponse.error("Failed to fetch reports", 500));
     }
@@ -102,7 +106,7 @@ public class ReportService {
                 .map(reportStatus -> {
                     log.debug("Fetching reports with status: {}", reportStatus);
                     return APIResponse.success(
-                        reportRepository.findByStatusOrderByCreatedAtDesc(reportStatus)
+                            reportRepository.findByStatusOrderByCreatedAtDesc(reportStatus)
                     );
                 })
                 .onErrorReturn(APIResponse.error("Invalid status: " + status, 400));
@@ -113,7 +117,7 @@ public class ReportService {
                 .map(type -> {
                     log.debug("Fetching reports with type: {}", type);
                     return APIResponse.success(
-                        reportRepository.findByReportTypeOrderByCreatedAtDesc(type)
+                            reportRepository.findByReportTypeOrderByCreatedAtDesc(type)
                     );
                 })
                 .onErrorReturn(APIResponse.error("Invalid report type: " + reportType, 400));
@@ -147,7 +151,7 @@ public class ReportService {
                 })
                 .map(APIResponse::success)
                 .onErrorResume(ReportNotFoundException.class,
-                    error -> Mono.just(APIResponse.error(error.getMessage(), 404)));
+                        error -> Mono.just(APIResponse.error(error.getMessage(), 404)));
     }
 
     public Mono<APIResponse<Long>> getReportCount() {

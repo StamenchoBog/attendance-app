@@ -7,7 +7,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:attendance_app/core/theme/color_palette.dart';
-import 'package:attendance_app/presentation/widgets/static/app_top_bar.dart';
 import 'package:attendance_app/presentation/widgets/static/bottom_nav_bar.dart';
 import 'package:attendance_app/presentation/widgets/static/helpers/navigation_helpers.dart';
 import 'package:attendance_app/presentation/screens/qr_scanner_screen.dart';

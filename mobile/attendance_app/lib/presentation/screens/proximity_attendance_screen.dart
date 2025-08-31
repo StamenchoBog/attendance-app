@@ -2,7 +2,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../core/services/ble_service.dart';
+import '../../core/services/proximity_attendance_service.dart';
 import '../../core/theme/color_palette.dart';
+import '../../core/theme/app_text_styles.dart';
+import '../../core/utils/ui_helpers.dart';
+import '../../core/constants/app_constants.dart';
+import '../../data/models/beacon_models.dart';
 import '../widgets/static/bottom_nav_bar.dart';
 import '../widgets/static/helpers/navigation_helpers.dart';
 import '../widgets/bluetooth_permission_handler.dart';
@@ -34,25 +39,20 @@ class _ProximityAttendanceScreenState extends State<ProximityAttendanceScreen> w
   late Animation<double> _pulseAnimation;
   late Animation<double> _progressAnimation;
 
-  AttendanceVerificationStatus _verificationStatus = AttendanceVerificationStatus.pending;
   BeaconDetection? _currentDetection;
-  Timer? _verificationTimer;
-  Duration _remainingTime = const Duration(seconds: 30);
+  final Duration _remainingTime = const Duration(minutes: 5);
   bool _isScanning = false;
-  bool _permissionsGranted = false;
   String _statusMessage = "Checking Bluetooth permissions...";
-  String? _permissionError;
 
   @override
   void initState() {
     super.initState();
     _initializeAnimations();
     _setupStreams();
-    // Don't start verification immediately - wait for permissions
   }
 
   void _initializeAnimations() {
-    _pulseController = AnimationController(duration: const Duration(seconds: 2), vsync: this);
+    _pulseController = AnimationController(duration: AppConstants.animationMedium, vsync: this);
     _progressController = AnimationController(duration: const Duration(seconds: 30), vsync: this);
 
     _pulseAnimation = Tween<double>(
@@ -81,9 +81,7 @@ class _ProximityAttendanceScreenState extends State<ProximityAttendanceScreen> w
     // Listen to verification status
     _proximityService.verificationStatus.listen((status) {
       if (mounted) {
-        setState(() {
-          _verificationStatus = status;
-        });
+        setState(() {});
         _handleVerificationResult(status);
       }
     });
@@ -101,30 +99,18 @@ class _ProximityAttendanceScreenState extends State<ProximityAttendanceScreen> w
 
       // Start the proximity verification process with simplified parameters
       await _proximityService.startAttendanceVerification(
-        sessionId: widget.sessionToken, // Use sessionToken as sessionId
+        sessionId: widget.sessionToken,
         verificationDuration: const Duration(seconds: 30),
       );
     } catch (e) {
       setState(() {
         _statusMessage = "Error: ${e.toString()}";
-        _verificationStatus = AttendanceVerificationStatus.failed;
         _isScanning = false;
       });
     }
   }
 
-  void _startCountdownTimer() {
-    _verificationTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (mounted) {
-        setState(() {
-          _remainingTime = Duration(seconds: 30 - timer.tick);
-          if (_remainingTime.inSeconds <= 0) {
-            timer.cancel();
-          }
-        });
-      }
-    });
-  }
+  void _startCountdownTimer() {}
 
   String _getStatusMessage(BeaconDetection detection) {
     final distance = detection.estimatedDistance.toStringAsFixed(1);
@@ -144,13 +130,10 @@ class _ProximityAttendanceScreenState extends State<ProximityAttendanceScreen> w
     switch (status) {
       case AttendanceVerificationStatus.verified:
         _showSuccessDialog();
-        break;
       case AttendanceVerificationStatus.failed:
         _showFailureDialog("Verification failed - please ensure you remain in the classroom");
-        break;
       case AttendanceVerificationStatus.timeout:
         _showFailureDialog("Verification timeout - beacon not detected consistently");
-        break;
       case AttendanceVerificationStatus.pending:
         break;
     }
@@ -162,35 +145,50 @@ class _ProximityAttendanceScreenState extends State<ProximityAttendanceScreen> w
       barrierDismissible: false,
       builder:
           (context) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppConstants.borderRadius16)),
             title: Row(
               children: [
-                Icon(Icons.check_circle, color: Colors.green, size: 32.sp),
-                SizedBox(width: 8.w),
-                const Text('Attendance Verified!'),
+                Icon(Icons.check_circle, color: ColorPalette.successColor, size: AppConstants.iconSizeLarge),
+                UIHelpers.horizontalSpace(AppConstants.spacing8),
+                Text('Attendance Verified!', style: AppTextStyles.heading3.copyWith(color: ColorPalette.textPrimary)),
               ],
             ),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('Your presence in ${widget.className} has been confirmed through beacon proximity verification.'),
-                SizedBox(height: 16.h),
-                Text('Room: ${widget.expectedRoomId}', style: TextStyle(fontWeight: FontWeight.bold)),
+                Text(
+                  'Your presence in ${widget.className} has been confirmed through beacon proximity verification.',
+                  style: AppTextStyles.bodyMedium.copyWith(color: ColorPalette.textSecondary),
+                ),
+                UIHelpers.verticalSpace(AppConstants.spacing16),
+                Text(
+                  'Room: ${widget.expectedRoomId}',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: ColorPalette.textPrimary,
+                  ),
+                ),
                 if (_currentDetection != null) ...[
-                  SizedBox(height: 8.h),
+                  UIHelpers.verticalSpace(AppConstants.spacing8),
                   Text(
                     'Average distance: ${_currentDetection!.estimatedDistance.toStringAsFixed(1)}m',
-                    style: TextStyle(fontSize: 12.sp, color: Colors.grey),
+                    style: AppTextStyles.caption.copyWith(color: ColorPalette.textSecondary),
                   ),
                 ],
               ],
             ),
             actions: [
-              TextButton(
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: ColorPalette.darkBlue,
+                  foregroundColor: ColorPalette.pureWhite,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppConstants.borderRadius8)),
+                ),
                 onPressed: () {
                   Navigator.of(context).pop();
                   Navigator.of(context).pop();
                 },
-                child: const Text('Continue'),
+                child: Text('Continue', style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600)),
               ),
             ],
           ),
@@ -203,29 +201,42 @@ class _ProximityAttendanceScreenState extends State<ProximityAttendanceScreen> w
       barrierDismissible: false,
       builder:
           (context) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppConstants.borderRadius16)),
             title: Row(
               children: [
-                Icon(Icons.error, color: Colors.red, size: 32.sp),
-                SizedBox(width: 8.w),
-                const Text('Verification Failed'),
+                Icon(Icons.error, color: ColorPalette.errorColor, size: AppConstants.iconSizeLarge),
+                UIHelpers.horizontalSpace(AppConstants.spacing8),
+                Text('Verification Failed', style: AppTextStyles.heading3.copyWith(color: ColorPalette.textPrimary)),
               ],
             ),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(message),
-                SizedBox(height: 16.h),
-                const Text('Please try again or contact your professor.'),
+                Text(message, style: AppTextStyles.bodyMedium.copyWith(color: ColorPalette.textSecondary)),
+                UIHelpers.verticalSpace(AppConstants.spacing16),
+                Text(
+                  'Please try again or contact your professor.',
+                  style: AppTextStyles.bodyMedium.copyWith(color: ColorPalette.textSecondary),
+                ),
               ],
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Retry')),
               TextButton(
+                style: TextButton.styleFrom(foregroundColor: ColorPalette.textSecondary),
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text('Retry', style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600)),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: ColorPalette.darkBlue,
+                  foregroundColor: ColorPalette.pureWhite,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppConstants.borderRadius8)),
+                ),
                 onPressed: () {
                   Navigator.of(context).pop();
                   Navigator.of(context).pop();
                 },
-                child: const Text('Cancel'),
+                child: Text('Cancel', style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600)),
               ),
             ],
           ),
@@ -233,23 +244,21 @@ class _ProximityAttendanceScreenState extends State<ProximityAttendanceScreen> w
   }
 
   Color _getStatusColor() {
-    if (_currentDetection == null) return Colors.orange;
-
+    if (_currentDetection == null) return ColorPalette.warningColor;
     switch (_currentDetection!.proximity) {
       case ProximityLevel.near:
-        return Colors.green;
+        return ColorPalette.successColor;
       case ProximityLevel.medium:
-        return Colors.blue;
+        return ColorPalette.darkBlue;
       case ProximityLevel.far:
-        return Colors.orange;
+        return ColorPalette.warningColor;
       case ProximityLevel.outOfRange:
-        return Colors.red;
+        return ColorPalette.errorColor;
     }
   }
 
   IconData _getStatusIcon() {
     if (_currentDetection == null) return Icons.search;
-
     switch (_currentDetection!.proximity) {
       case ProximityLevel.near:
         return Icons.check_circle;
@@ -270,7 +279,6 @@ class _ProximityAttendanceScreenState extends State<ProximityAttendanceScreen> w
 
   void _onPermissionsGranted() {
     setState(() {
-      _permissionsGranted = true;
       _statusMessage = "Permissions granted! Starting proximity verification...";
     });
     // Now that permissions are granted, start the verification
@@ -279,9 +287,7 @@ class _ProximityAttendanceScreenState extends State<ProximityAttendanceScreen> w
 
   void _onPermissionError(String error) {
     setState(() {
-      _permissionError = error;
       _statusMessage = "Permission error: $error";
-      _verificationStatus = AttendanceVerificationStatus.failed;
     });
   }
 
@@ -296,25 +302,23 @@ class _ProximityAttendanceScreenState extends State<ProximityAttendanceScreen> w
 
   Widget _buildMainContent() {
     return Scaffold(
-      backgroundColor: ColorPalette.backgroundColor,
+      backgroundColor: ColorPalette.screenBackgroundLight,
       body: SafeArea(
         child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 20.h),
+          padding: EdgeInsets.symmetric(horizontal: AppConstants.spacing24, vertical: AppConstants.spacing20),
           child: Column(
             children: [
               _buildHeader(),
-              SizedBox(height: 32.h),
-              Expanded(
-                child: _buildVerificationContent(),
-              ),
+              UIHelpers.verticalSpace(AppConstants.spacing32),
+              Expanded(child: _buildVerificationContent()),
               _buildBottomActions(),
             ],
           ),
         ),
       ),
-      bottomNavigationBar: BottomNavBar(
+      bottomNavigationBar: CustomBottomNavBar(
         selectedIndex: _selectedIndex,
-        onItemTapped: (index) => NavigationHelpers.handleNavigation(context, index),
+        onTap: (index) => handleBottomNavigation(context, index),
       ),
     );
   }
@@ -325,17 +329,13 @@ class _ProximityAttendanceScreenState extends State<ProximityAttendanceScreen> w
       children: [
         Text(
           'Proximity Attendance',
-          style: TextStyle(
-            fontSize: 20.sp,
-            fontWeight: FontWeight.w600,
-            color: ColorPalette.textPrimary,
-          ),
+          style: AppTextStyles.heading2.copyWith(color: ColorPalette.textPrimary, fontWeight: FontWeight.w600),
         ),
         IconButton(
           onPressed: () {
             // Add functionality for settings or info
           },
-          icon: Icon(Icons.settings, size: 24.sp, color: ColorPalette.iconColor),
+          icon: Icon(Icons.settings, size: AppConstants.iconSizeMedium, color: ColorPalette.iconGrey),
         ),
       ],
     );
@@ -359,67 +359,50 @@ class _ProximityAttendanceScreenState extends State<ProximityAttendanceScreen> w
                     color: _getStatusColor().withValues(alpha: 0.2),
                     border: Border.all(color: _getStatusColor(), width: 3),
                   ),
-                  child: Icon(_getStatusIcon(), size: 80.sp, color: _getStatusColor()),
+                  child: Icon(_getStatusIcon(), size: AppConstants.iconSizeXLarge * 2, color: _getStatusColor()),
                 ),
               ),
         ),
 
-        SizedBox(height: 40.h),
+        UIHelpers.verticalSpace(AppConstants.spacing40),
 
         // Status message - Fixed overflow for long messages
         Text(
           _statusMessage,
-          style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w600, color: ColorPalette.textPrimary),
+          style: AppTextStyles.heading3.copyWith(color: ColorPalette.textPrimary, fontWeight: FontWeight.w600),
           textAlign: TextAlign.center,
           maxLines: 4,
           overflow: TextOverflow.ellipsis,
         ),
 
-        SizedBox(height: 24.h),
+        UIHelpers.verticalSpace(AppConstants.spacing24),
 
         // Detection details - Fixed overflow in rows
         if (_currentDetection != null) ...[
           Container(
             width: double.infinity,
-            padding: EdgeInsets.all(16.w),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12.r),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
+            padding: EdgeInsets.all(AppConstants.spacing16),
+            decoration: UIHelpers.roundedCardDecoration,
             child: Column(
               children: [
                 _buildDetailRow('Room:', _currentDetection!.roomId),
-                SizedBox(height: 8.h),
-                _buildDetailRow(
-                  'Distance:',
-                  '${_currentDetection!.estimatedDistance.toStringAsFixed(1)}m',
-                ),
-                SizedBox(height: 8.h),
+                UIHelpers.verticalSpace(AppConstants.spacing8),
+                _buildDetailRow('Distance:', '${_currentDetection!.estimatedDistance.toStringAsFixed(1)}m'),
+                UIHelpers.verticalSpace(AppConstants.spacing8),
                 _buildDetailRow('Signal:', '${_currentDetection!.rssi} dBm'),
               ],
             ),
           ),
-          SizedBox(height: 24.h),
+          UIHelpers.verticalSpace(AppConstants.spacing24),
         ],
 
         // Countdown timer
         Text(
           'Time remaining: ${_remainingTime.inSeconds}s',
-          style: TextStyle(
-            fontSize: 16.sp,
-            fontWeight: FontWeight.w500,
-            color: ColorPalette.textSecondary,
-          ),
+          style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.w500, color: ColorPalette.textSecondary),
         ),
 
-        SizedBox(height: 16.h),
+        UIHelpers.verticalSpace(AppConstants.spacing16),
 
         // Progress bar
         AnimatedBuilder(
@@ -427,10 +410,10 @@ class _ProximityAttendanceScreenState extends State<ProximityAttendanceScreen> w
           builder:
               (context, child) => Container(
                 width: double.infinity,
-                height: 8.h,
+                height: AppConstants.spacing8,
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(4.r),
+                  color: ColorPalette.dividerColor,
+                  borderRadius: BorderRadius.circular(AppConstants.borderRadius4),
                 ),
                 child: FractionallySizedBox(
                   alignment: Alignment.centerLeft,
@@ -438,14 +421,14 @@ class _ProximityAttendanceScreenState extends State<ProximityAttendanceScreen> w
                   child: Container(
                     decoration: BoxDecoration(
                       color: _getStatusColor(),
-                      borderRadius: BorderRadius.circular(4.r),
+                      borderRadius: BorderRadius.circular(AppConstants.borderRadius4),
                     ),
                   ),
                 ),
               ),
         ),
 
-        SizedBox(height: 60.h),
+        UIHelpers.verticalSpace(AppConstants.spacing64),
         // Extra spacing for better scrolling
       ],
     );
@@ -453,21 +436,26 @@ class _ProximityAttendanceScreenState extends State<ProximityAttendanceScreen> w
 
   Widget _buildBottomActions() {
     return Padding(
-      padding: EdgeInsets.fromLTRB(20.w, 10.h, 20.w, 20.h),
+      padding: EdgeInsets.fromLTRB(
+        AppConstants.spacing20,
+        AppConstants.spacing12,
+        AppConstants.spacing20,
+        AppConstants.spacing20,
+      ),
       child: SizedBox(
         width: double.infinity,
-        height: 56.h,
+        height: AppConstants.buttonHeight,
         child: ElevatedButton(
           onPressed: () {
             _proximityService.stopAttendanceVerification();
             Navigator.of(context).pop();
           },
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.grey.shade600,
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+            backgroundColor: ColorPalette.disabledColor,
+            foregroundColor: ColorPalette.pureWhite,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppConstants.borderRadius16)),
           ),
-          child: Text('Cancel Verification', style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600)),
+          child: Text('Cancel Verification', style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.w600)),
         ),
       ),
     );
@@ -479,14 +467,19 @@ class _ProximityAttendanceScreenState extends State<ProximityAttendanceScreen> w
       children: [
         Flexible(
           flex: 2,
-          child: Text(label, style: TextStyle(fontSize: 14.sp), maxLines: 1, overflow: TextOverflow.ellipsis),
+          child: Text(
+            label,
+            style: AppTextStyles.bodyMedium.copyWith(color: ColorPalette.textSecondary),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
-        SizedBox(width: 8.w),
+        UIHelpers.horizontalSpace(AppConstants.spacing8),
         Flexible(
           flex: 3,
           child: Text(
             value,
-            style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.bold),
+            style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.bold, color: ColorPalette.textPrimary),
             textAlign: TextAlign.end,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,

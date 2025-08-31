@@ -1,6 +1,8 @@
 package mk.ukim.finki.attendanceappserver.domain.models;
 
 import lombok.*;
+import mk.ukim.finki.attendanceappserver.domain.enums.ProximityLevel;
+import mk.ukim.finki.attendanceappserver.domain.enums.ProximityVerificationStatus;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
@@ -35,7 +37,7 @@ public class ProximityVerificationLog {
     private Integer rssi;
 
     @Column("proximity_level")
-    private String proximityLevel; // NEAR, MEDIUM, FAR, OUT_OF_RANGE
+    private ProximityLevel proximityLevel;
 
     @Column("estimated_distance")
     private Double estimatedDistance;
@@ -44,13 +46,13 @@ public class ProximityVerificationLog {
     private LocalDateTime verificationTimestamp;
 
     @Column("verification_status")
-    private String verificationStatus; // ONGOING, SUCCESS, FAILED, TIMEOUT
+    private ProximityVerificationStatus verificationStatus;
 
     @Column("verification_duration_seconds")
     private Integer verificationDurationSeconds;
 
     @Column("beacon_type")
-    private String beaconType; // DEDICATED_BEACON, PROFESSOR_PHONE
+    private String beaconType;
 
     @Column("session_token")
     private String sessionToken;

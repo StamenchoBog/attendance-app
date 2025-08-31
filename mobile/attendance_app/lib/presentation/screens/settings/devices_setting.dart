@@ -5,10 +5,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:attendance_app/core/theme/color_palette.dart';
+import 'package:attendance_app/core/theme/app_text_styles.dart';
+import 'package:attendance_app/core/utils/ui_helpers.dart';
+import 'package:attendance_app/core/constants/app_constants.dart';
+import 'package:attendance_app/core/utils/notification_helper.dart';
 import 'package:attendance_app/core/services/device_identifier_service.dart';
 import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import '../../../data/models/student.dart';
 import '../../../data/providers/user_provider.dart';
 
@@ -70,14 +73,14 @@ class _DevicesOverviewScreenState extends State<DevicesOverviewScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: ColorPalette.pureWhite,
       appBar: AppBar(
         title: Text(
           'Devices',
-          style: TextStyle(color: ColorPalette.textPrimary, fontWeight: FontWeight.w600, fontSize: 18.sp),
+          style: AppTextStyles.heading3.copyWith(color: ColorPalette.textPrimary, fontWeight: FontWeight.w600),
         ),
         centerTitle: true,
-        backgroundColor: Colors.white,
+        backgroundColor: ColorPalette.pureWhite,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(CupertinoIcons.back, color: ColorPalette.textPrimary),
@@ -90,7 +93,12 @@ class _DevicesOverviewScreenState extends State<DevicesOverviewScreen> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return _buildLoadingSkeleton();
           } else if (snapshot.hasError) {
-            return const Center(child: Text('Failed to load device information.'));
+            return Center(
+              child: Text(
+                'Failed to load device information.',
+                style: AppTextStyles.bodyMedium.copyWith(color: ColorPalette.textSecondary),
+              ),
+            );
           } else if (snapshot.hasData) {
             final registeredDevice = snapshot.data!['registered']!;
             final currentDevice = snapshot.data!['current']!;
@@ -101,28 +109,28 @@ class _DevicesOverviewScreenState extends State<DevicesOverviewScreen> {
             }
 
             return Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20.w),
+              padding: EdgeInsets.symmetric(horizontal: AppConstants.spacing20),
               child: Column(
                 children: [
                   Expanded(
                     child: ListView(
                       children: [
                         const ProfileHeaderWidget(),
-                        SizedBox(height: 25.h),
+                        UIHelpers.verticalSpace(AppConstants.spacing24),
                         Text(
                           'For security, your attendance can only be marked from one registered device.',
                           textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 14.sp, color: ColorPalette.textSecondary),
+                          style: AppTextStyles.bodyMedium.copyWith(color: ColorPalette.textSecondary),
                         ),
-                        SizedBox(height: 25.h),
+                        UIHelpers.verticalSpace(AppConstants.spacing24),
                         _buildDeviceInfoCard(
                           title: 'Registered for Attendance',
                           deviceName: registeredDevice['name'] ?? 'Unknown',
                           deviceOs: registeredDevice['os'] ?? 'Unknown',
                           icon: CupertinoIcons.checkmark_shield_fill,
-                          iconColor: Colors.green,
+                          iconColor: ColorPalette.successColor,
                         ),
-                        SizedBox(height: 15.h),
+                        UIHelpers.verticalSpace(AppConstants.spacing16),
                         _buildDeviceInfoCard(
                           title: 'Current Device',
                           deviceName: currentDevice['name'] ?? 'Unknown',
@@ -130,7 +138,7 @@ class _DevicesOverviewScreenState extends State<DevicesOverviewScreen> {
                           icon: CupertinoIcons.device_phone_portrait,
                           iconColor: ColorPalette.darkBlue,
                         ),
-                        SizedBox(height: 20.h),
+                        UIHelpers.verticalSpace(AppConstants.spacing20),
                         _buildStatusIndicator(devicesMatch),
                       ],
                     ),
@@ -156,28 +164,34 @@ class _DevicesOverviewScreenState extends State<DevicesOverviewScreen> {
     return Card(
       elevation: 0,
       color: ColorPalette.lightestBlue,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppConstants.borderRadius12)),
       child: Padding(
-        padding: EdgeInsets.all(16.w),
+        padding: EdgeInsets.all(AppConstants.spacing16),
         child: Row(
           children: [
-            Icon(icon, color: iconColor, size: 30.sp),
-            SizedBox(width: 15.w),
+            Icon(icon, color: iconColor, size: AppConstants.iconSizeLarge),
+            UIHelpers.horizontalSpace(AppConstants.spacing16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     title,
-                    style: TextStyle(fontSize: 13.sp, color: ColorPalette.textSecondary, fontWeight: FontWeight.w500),
+                    style: AppTextStyles.caption.copyWith(
+                      color: ColorPalette.textSecondary,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
-                  SizedBox(height: 4.h),
+                  UIHelpers.verticalSpace(AppConstants.spacing4),
                   Text(
                     deviceName,
-                    style: TextStyle(fontSize: 16.sp, color: ColorPalette.textPrimary, fontWeight: FontWeight.bold),
+                    style: AppTextStyles.bodyLarge.copyWith(
+                      color: ColorPalette.textPrimary,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                  SizedBox(height: 2.h),
-                  Text(deviceOs, style: TextStyle(fontSize: 13.sp, color: ColorPalette.textSecondary)),
+                  UIHelpers.verticalSpace(2.h),
+                  Text(deviceOs, style: AppTextStyles.caption.copyWith(color: ColorPalette.textSecondary)),
                 ],
               ),
             ),
@@ -189,26 +203,31 @@ class _DevicesOverviewScreenState extends State<DevicesOverviewScreen> {
 
   Widget _buildStatusIndicator(bool devicesMatch) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+      padding: EdgeInsets.symmetric(horizontal: AppConstants.spacing12, vertical: AppConstants.spacing8),
       decoration: BoxDecoration(
-        color: devicesMatch ? Colors.green.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8.r),
+        color:
+            devicesMatch
+                ? ColorPalette.successColor.withValues(alpha: 0.1)
+                : ColorPalette.warningColor.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(AppConstants.borderRadius8),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
             devicesMatch ? CupertinoIcons.check_mark_circled : CupertinoIcons.exclamationmark_triangle,
-            color: devicesMatch ? Colors.green : Colors.orange,
-            size: 20.sp,
+            color: devicesMatch ? ColorPalette.successColor : ColorPalette.warningColor,
+            size: AppConstants.iconSizeMedium,
           ),
-          SizedBox(width: 8.w),
+          UIHelpers.horizontalSpace(AppConstants.spacing8),
           Text(
             devicesMatch ? 'Devices Match' : 'Device Mismatch',
-            style: TextStyle(
-              fontSize: 14.sp,
+            style: AppTextStyles.bodyMedium.copyWith(
               fontWeight: FontWeight.w600,
-              color: devicesMatch ? Colors.green.shade800 : Colors.orange.shade800,
+              color:
+                  devicesMatch
+                      ? ColorPalette.successColor.withValues(alpha: 0.8)
+                      : ColorPalette.warningColor.withValues(alpha: 0.8),
             ),
           ),
         ],
@@ -218,14 +237,14 @@ class _DevicesOverviewScreenState extends State<DevicesOverviewScreen> {
 
   Widget _buildActionButton(bool devicesMatch) {
     return Padding(
-      padding: EdgeInsets.only(bottom: 30.h, top: 15.h),
+      padding: EdgeInsets.only(bottom: AppConstants.spacing32, top: AppConstants.spacing16),
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
-          backgroundColor: devicesMatch || _isSubmitting ? Colors.grey : ColorPalette.darkBlue,
-          foregroundColor: Colors.white,
-          minimumSize: Size(double.infinity, 55.h),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
-          textStyle: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600),
+          backgroundColor: devicesMatch || _isSubmitting ? ColorPalette.disabledColor : ColorPalette.darkBlue,
+          foregroundColor: ColorPalette.pureWhite,
+          minimumSize: Size(double.infinity, AppConstants.buttonHeight),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppConstants.borderRadius12)),
+          textStyle: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.w600),
         ),
         onPressed:
             devicesMatch || _isSubmitting
@@ -238,23 +257,13 @@ class _DevicesOverviewScreenState extends State<DevicesOverviewScreen> {
 
                     await _deviceIdentifierService.requestDeviceLink(user.studentIndex);
 
-                    Fluttertoast.showToast(
-                      msg: "Request submitted! It will be processed shortly.",
-                      toastLength: Toast.LENGTH_LONG,
-                      gravity: ToastGravity.TOP,
-                      backgroundColor: Colors.green,
-                      textColor: Colors.white,
-                      fontSize: 16.0.sp,
-                    );
+                    if (mounted) {
+                      NotificationHelper.showSuccess(context, "Request submitted! It will be processed shortly.");
+                    }
                   } catch (e) {
-                    Fluttertoast.showToast(
-                      msg: "Error: ${e.toString()}",
-                      toastLength: Toast.LENGTH_LONG,
-                      gravity: ToastGravity.TOP,
-                      backgroundColor: Colors.red,
-                      textColor: Colors.white,
-                      fontSize: 16.0.sp,
-                    );
+                    if (mounted) {
+                      NotificationHelper.showError(context, "Error: ${e.toString()}");
+                    }
                   } finally {
                     if (mounted) {
                       setState(() => _isSubmitting = false);
@@ -263,7 +272,7 @@ class _DevicesOverviewScreenState extends State<DevicesOverviewScreen> {
                 },
         child:
             _isSubmitting
-                ? const CircularProgressIndicator(color: Colors.white)
+                ? CircularProgressIndicator(color: ColorPalette.pureWhite)
                 : Text(devicesMatch ? 'Device Linked' : 'Link This Device'),
       ),
     );
@@ -271,13 +280,13 @@ class _DevicesOverviewScreenState extends State<DevicesOverviewScreen> {
 
   Widget _buildLoadingSkeleton() {
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 20.w),
+      padding: EdgeInsets.symmetric(horizontal: AppConstants.spacing20),
       child: Column(
         children: [
           const ProfileHeaderWidget(),
-          SizedBox(height: 50.h),
+          UIHelpers.verticalSpace(AppConstants.spacing48),
           const SkeletonLoader(width: double.infinity, height: 80),
-          SizedBox(height: 15.h),
+          UIHelpers.verticalSpace(AppConstants.spacing16),
           const SkeletonLoader(width: double.infinity, height: 80),
         ],
       ),

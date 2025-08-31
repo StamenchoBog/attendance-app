@@ -1,5 +1,3 @@
-import 'package:intl/intl.dart';
-
 String getCurrentSemester() {
   final now = DateTime.now();
   final year = now.year;

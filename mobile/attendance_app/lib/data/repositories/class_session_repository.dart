@@ -1,83 +1,104 @@
-import 'package:intl/intl.dart';
-import 'package:logger/logger.dart';
+import 'package:attendance_app/core/utils/error_handler.dart';
+import 'package:attendance_app/data/models/scheduled_class_session.dart';
 import 'package:attendance_app/data/services/api/api_client.dart';
 import 'package:attendance_app/data/services/api/api_endpoints.dart';
+import 'package:flutter/material.dart';
 
 class ClassSessionRepository {
   final ApiClient _apiClient;
-  final Logger _logger = Logger();
+  static const String _repositoryName = 'ClassSessionRepository';
 
   ClassSessionRepository(this._apiClient);
 
-  // Get class sessions for a student on a specific date
-  Future<List<dynamic>> getClassSessionsByStudentAndDateTime(String studentIndex, DateTime dateTime) async {
-    try {
-      // Create request body
-      final body = {'studentIndex': studentIndex, 'dateTime': DateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(dateTime)};
+  Future<List<Map<String, dynamic>>?> getProfessorClassSessionsByDate({
+    required String professorId,
+    required DateTime date,
+    BuildContext? context,
+  }) async {
+    return await ErrorHandler.handleRepositoryError<List<Map<String, dynamic>>>(
+      () async {
+        final requestBody = {'professorId': professorId, 'date': date.toIso8601String().split('T')[0]};
 
-      // Make API request using proper Dio response handling
-      final response = await _apiClient.post<Map<String, dynamic>>(
-        '${ApiEndpoints.classSessions}/by-student/by-date/overview',
-        data: body,
-      );
+        final response = await _apiClient.post<Map<String, dynamic>>(
+          ApiEndpoints.classSessionsByProfessorByDate,
+          data: requestBody,
+        );
 
-      return response.data?['data'] ?? [];
-    } on ApiException catch (e) {
-      _logger.e('Error fetching student class sessions: ${e.statusCode} - ${e.message}');
-      throw 'Failed to fetch class sessions. Please try again.';
-    } catch (e) {
-      _logger.e('Unexpected error fetching student class sessions: $e');
-      throw 'An unexpected error occurred. Please try again.';
-    }
+        // Updated to handle the new API response structure
+        final List<dynamic> sessionsList = response.data?['data'] ?? [];
+        return sessionsList.cast<Map<String, dynamic>>();
+      },
+      _repositoryName,
+      'getProfessorClassSessionsByDate',
+      showDialog: context != null,
+      context: context,
+    );
   }
 
-  Future<List<dynamic>> getProfessorClassSessions(String professorId, DateTime date) async {
-    try {
-      final body = {'professorId': professorId, 'date': DateFormat('yyyy-MM-dd').format(date)};
+  Future<List<Map<String, dynamic>>?> getProfessorCurrentWeekSessions(
+    String professorId, {
+    BuildContext? context,
+  }) async {
+    return await ErrorHandler.handleRepositoryError<List<Map<String, dynamic>>>(
+      () async {
+        final response = await _apiClient.get<Map<String, dynamic>>(
+          '${ApiEndpoints.classSessionsByProfessorCurrentWeek}/$professorId/current-week',
+        );
 
-      final response = await _apiClient.post<Map<String, dynamic>>(
-        '${ApiEndpoints.classSessions}/by-professor/by-date',
-        data: body,
-      );
-
-      return response.data?['data'] ?? [];
-    } on ApiException catch (e) {
-      _logger.e('Error fetching professor class sessions: ${e.statusCode} - ${e.message}');
-      throw 'Failed to fetch professor class sessions. Please try again.';
-    } catch (e) {
-      _logger.e('Unexpected error fetching professor class sessions: $e');
-      throw 'An unexpected error occurred. Please try again.';
-    }
+        // Updated to handle the new API response structure
+        final List<dynamic> sessionsList = response.data?['data'] ?? [];
+        return sessionsList.cast<Map<String, dynamic>>();
+      },
+      _repositoryName,
+      'getProfessorCurrentWeekSessions',
+      showDialog: context != null,
+      context: context,
+    );
   }
 
-  Future<Map<String, dynamic>?> getClassSessionDetails(int sessionId) async {
-    try {
-      final response = await _apiClient.get<Map<String, dynamic>>('${ApiEndpoints.classSessions}/$sessionId');
+  Future<List<Map<String, dynamic>>?> getProfessorCurrentMonthSessions(
+    String professorId, {
+    BuildContext? context,
+  }) async {
+    return await ErrorHandler.handleRepositoryError<List<Map<String, dynamic>>>(
+      () async {
+        final response = await _apiClient.get<Map<String, dynamic>>(
+          '${ApiEndpoints.classSessionsByProfessorCurrentMonth}/$professorId/current-month',
+        );
 
-      return response.data?['data'];
-    } on ApiException catch (e) {
-      _logger.e('Error fetching class session details: ${e.statusCode} - ${e.message}');
-      throw 'Failed to fetch class session details. Please try again.';
-    } catch (e) {
-      _logger.e('Unexpected error fetching class session details: $e');
-      throw 'An unexpected error occurred. Please try again.';
-    }
+        // Updated to handle the new API response structure
+        final List<dynamic> sessionsList = response.data?['data'] ?? [];
+        return sessionsList.cast<Map<String, dynamic>>();
+      },
+      _repositoryName,
+      'getProfessorCurrentMonthSessions',
+      showDialog: context != null,
+      context: context,
+    );
   }
 
-  Future<List<dynamic>> getUpcomingClassSessions(String userId, String userType) async {
-    try {
-      final response = await _apiClient.get<Map<String, dynamic>>(
-        '${ApiEndpoints.classSessions}/upcoming',
-        queryParameters: {'userId': userId, 'userType': userType},
-      );
+  Future<List<Map<String, dynamic>>?> getClassSessionsByStudentIndexForGivenDateAndTime({
+    required String studentIndex,
+    required String dateTime,
+    BuildContext? context,
+  }) async {
+    return await ErrorHandler.handleRepositoryError<List<Map<String, dynamic>>>(
+      () async {
+        final requestBody = {'studentIndex': studentIndex, 'dateTime': dateTime};
 
-      return response.data?['data'] ?? [];
-    } on ApiException catch (e) {
-      _logger.e('Error fetching upcoming class sessions: ${e.statusCode} - ${e.message}');
-      throw 'Failed to fetch upcoming class sessions. Please try again.';
-    } catch (e) {
-      _logger.e('Unexpected error fetching upcoming class sessions: $e');
-      throw 'An unexpected error occurred. Please try again.';
-    }
+        final response = await _apiClient.post<Map<String, dynamic>>(
+          ApiEndpoints.classSessionsByStudentByDateOverview,
+          data: requestBody,
+        );
+
+        // Updated to handle the new API response structure
+        final List<dynamic> sessionsList = response.data?['data'] ?? [];
+        return sessionsList.cast<Map<String, dynamic>>();
+      },
+      _repositoryName,
+      'getClassSessionsByStudentIndexForGivenDateAndTime',
+      showDialog: context != null,
+      context: context,
+    );
   }
 }

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:attendance_app/core/theme/color_palette.dart';
+import 'package:attendance_app/core/theme/app_text_styles.dart';
+import 'package:attendance_app/core/utils/ui_helpers.dart';
+import 'package:attendance_app/core/constants/app_constants.dart';
 
 class AppTopBar extends StatelessWidget {
   final String searchHintText;
@@ -22,35 +24,44 @@ class AppTopBar extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        //
         // Leading widget (Logo)
-        //
-        leadingWidget ?? Image(image: const AssetImage('assets/logo/finki_logo.png'), height: 30.h),
+        leadingWidget ??
+            Image(image: const AssetImage('assets/logo/finki_logo.png'), height: AppConstants.iconSizeLarge),
 
-        SizedBox(width: 15.w),
+        UIHelpers.horizontalSpace(AppConstants.spacing16),
 
-        ///
-        /// Search field
-        ///
+        // Search field
         Expanded(
           child: TextField(
             decoration: InputDecoration(
               hintText: searchHintText,
-              hintStyle: TextStyle(fontSize: 14.sp, color: ColorPalette.iconGrey),
+              hintStyle: AppTextStyles.bodyMedium.copyWith(color: ColorPalette.iconGrey),
               prefixIcon: Padding(
-                padding: EdgeInsets.only(left: 10.w, right: 6.w),
-                child: Icon(CupertinoIcons.search, size: 20.sp, color: ColorPalette.iconGrey),
+                padding: EdgeInsets.only(left: AppConstants.spacing12, right: AppConstants.spacing8),
+                child: Icon(CupertinoIcons.search, size: AppConstants.iconSizeMedium, color: ColorPalette.iconGrey),
               ),
-              prefixIconConstraints: BoxConstraints(minHeight: 20.h, minWidth: 20.w),
+              prefixIconConstraints: BoxConstraints(
+                minHeight: AppConstants.iconSizeMedium,
+                minWidth: AppConstants.iconSizeMedium,
+              ),
               isDense: true,
-              contentPadding: EdgeInsets.symmetric(vertical: 10.h, horizontal: 0),
+              contentPadding: EdgeInsets.symmetric(vertical: AppConstants.spacing12, horizontal: 0),
               filled: true,
               fillColor: ColorPalette.searchBarFill,
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10.r), borderSide: BorderSide.none),
-              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10.r), borderSide: BorderSide.none),
-              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10.r), borderSide: BorderSide.none),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppConstants.borderRadius12),
+                borderSide: BorderSide.none,
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppConstants.borderRadius12),
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppConstants.borderRadius12),
+                borderSide: BorderSide.none,
+              ),
             ),
-            style: TextStyle(fontSize: 14.sp, color: ColorPalette.textPrimary),
+            style: AppTextStyles.bodyMedium.copyWith(color: ColorPalette.textPrimary),
             onChanged: onSearchChanged,
           ),
         ),

@@ -1,120 +1,144 @@
-import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:logger/logger.dart';
-import '../services/api/api_client.dart';
-import '../services/api/api_endpoints.dart';
-import '../models/student.dart';
+import 'package:attendance_app/core/utils/error_handler.dart';
+import 'package:attendance_app/data/models/student.dart';
+import 'package:attendance_app/data/services/api/api_client.dart';
+import 'package:attendance_app/data/services/api/api_endpoints.dart';
+import 'package:flutter/material.dart';
 
 class StudentRepository {
   final ApiClient _apiClient;
-  final Logger _logger = Logger();
+  static const String _repositoryName = 'StudentRepository';
 
   StudentRepository(this._apiClient);
 
-  Future<List<Student>> getStudents() async {
-    try {
-      // Try to get from API first
-      final response = await _apiClient.get<Map<String, dynamic>>(ApiEndpoints.students);
-      final data = response.data?['data'] as List;
-      final students = data.map((json) => Student.fromJson(json)).toList();
+  Future<Student?> getStudentByIndex(String studentIndex, {BuildContext? context}) async {
+    return await ErrorHandler.handleRepositoryError<Student>(
+      () async {
+        final response = await _apiClient.get<Map<String, dynamic>>('${ApiEndpoints.students}/$studentIndex');
 
-      // Cache the result for offline access
-      await _cacheStudents(students);
+        // Updated to handle the new API response structure
+        final studentData = response.data?['data'] as Map<String, dynamic>?;
+        if (studentData == null) {
+          throw Exception('No student data found');
+        }
 
-      return students;
-    } on ApiException catch (e) {
-      _logger.w('API failed, trying cache: ${e.message}');
-      return await _getCachedStudents();
-    } catch (e) {
-      _logger.e('Unexpected error getting students: $e');
-      // Try cache as fallback
-      try {
-        return await _getCachedStudents();
-      } catch (cacheError) {
-        _logger.e('Cache also failed: $cacheError');
-        throw 'Unable to load students. Please check your connection.';
-      }
-    }
+        return Student.fromJson(studentData);
+      },
+      _repositoryName,
+      'getStudentByIndex',
+      showDialog: context != null,
+      context: context,
+    );
   }
 
-  Future<Student?> getStudentById(String studentId) async {
-    try {
-      final response = await _apiClient.get<Map<String, dynamic>>('${ApiEndpoints.students}/$studentId');
-      final data = response.data?['data'];
-      return data != null ? Student.fromJson(data) : null;
-    } on ApiException catch (e) {
-      _logger.e('Failed to get student by ID: ${e.message}');
-      throw e.message;
-    } catch (e) {
-      _logger.e('Unexpected error getting student by ID: $e');
-      throw 'Unable to load student details.';
-    }
+  Future<List<Student>?> getStudentsByProfessor(String professorId, {BuildContext? context}) async {
+    return await ErrorHandler.handleRepositoryError<List<Student>>(
+      () async {
+        final response = await _apiClient.get<Map<String, dynamic>>('${ApiEndpoints.studentsByProfessor}/$professorId');
+
+        // Updated to handle the new API response structure
+        final List<dynamic> studentsList = response.data?['data'] ?? [];
+        return studentsList.map((json) => Student.fromJson(json as Map<String, dynamic>)).toList();
+      },
+      _repositoryName,
+      'getStudentsByProfessor',
+      showDialog: context != null,
+      context: context,
+    );
   }
 
-  Future<Map<String, dynamic>> getStudentSchedule(String studentIndex, String date) async {
-    try {
-      final response = await _apiClient.get<Map<String, dynamic>>(
-        '${ApiEndpoints.students}/$studentIndex/schedule',
-        queryParameters: {'date': date},
-      );
-      return response.data?['data'] ?? {};
-    } on ApiException catch (e) {
-      _logger.e('Failed to get student schedule: ${e.message}');
-      throw e.message;
-    } catch (e) {
-      _logger.e('Unexpected error getting student schedule: $e');
-      throw 'Unable to load schedule.';
-    }
+  Future<bool?> isStudentValid(String studentIndex, {BuildContext? context}) async {
+    return await ErrorHandler.handleRepositoryError<bool>(
+      () async {
+        final response = await _apiClient.get<Map<String, dynamic>>('${ApiEndpoints.studentsIsValid}/$studentIndex');
+
+        // Updated to handle the new API response structure
+        final isValid = response.data?['data'] as bool?;
+        return isValid ?? false;
+      },
+      _repositoryName,
+      'isStudentValid',
+      showDialog: context != null,
+      context: context,
+    );
   }
 
-  Future<void> requestDeviceLink({
-    required String studentIndex,
-    required String newDeviceId,
-    required String deviceName,
+  Future<Map<String, dynamic>?> getRegisteredDevice(String studentIndex, {BuildContext? context}) async {
+    return await ErrorHandler.handleRepositoryError<Map<String, dynamic>>(
+      () async {
+        final response = await _apiClient.get<Map<String, dynamic>>(
+          '${ApiEndpoints.students}/$studentIndex/registered-device',
+        );
+
+        // Updated to handle the new API response structure
+        final deviceData = response.data?['data'] as Map<String, dynamic>?;
+        return deviceData ?? {};
+      },
+      _repositoryName,
+      'getRegisteredDevice',
+      showDialog: context != null,
+      context: context,
+    );
+  }
+
+  Future<Map<String, dynamic>?> getAttendanceSummary(
+    String studentIndex,
+    String semester, {
+    BuildContext? context,
   }) async {
-    try {
-      await _apiClient.post<void>(
-        '${ApiEndpoints.students}/$studentIndex/device-link-request',
-        data: {'newDeviceId': newDeviceId, 'deviceName': deviceName},
-      );
-    } on ApiException catch (e) {
-      _logger.e('Failed to request device link: ${e.message}');
-      throw e.message;
-    } catch (e) {
-      _logger.e('Unexpected error requesting device link: $e');
-      throw 'Unable to request device link.';
-    }
+    return await ErrorHandler.handleRepositoryError<Map<String, dynamic>>(
+      () async {
+        final response = await _apiClient.get<Map<String, dynamic>>(
+          '${ApiEndpoints.students}/$studentIndex/attendance-summary',
+          queryParameters: {'semester': semester},
+        );
+
+        // Updated to handle the new API response structure
+        final summaryData = response.data?['data'] as Map<String, dynamic>?;
+        return summaryData ?? {};
+      },
+      _repositoryName,
+      'getAttendanceSummary',
+      showDialog: context != null,
+      context: context,
+    );
   }
 
-  // Private helper methods
-  Future<void> _cacheStudents(List<Student> students) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final studentsJson = students.map((student) => student.toJson()).toList();
-      await prefs.setString('cached_students', jsonEncode(studentsJson));
-      await prefs.setInt('students_cache_timestamp', DateTime.now().millisecondsSinceEpoch);
-    } catch (e) {
-      _logger.w('Failed to cache students: $e');
-      // Don't throw, caching is optional
-    }
+  Future<bool> requestDeviceLink({
+    required String studentIndex,
+    required String deviceId,
+    required String deviceName,
+    required String deviceOs,
+    BuildContext? context,
+  }) async {
+    return await ErrorHandler.handleAsyncVoidError(
+      () async {
+        final requestBody = {'deviceId': deviceId, 'deviceName': deviceName, 'deviceOs': deviceOs};
+
+        await _apiClient.post<void>('${ApiEndpoints.students}/$studentIndex/device-link-request', data: requestBody);
+      },
+      '$_repositoryName.requestDeviceLink',
+      showDialog: context != null,
+      context: context,
+    );
   }
 
-  Future<List<Student>> _getCachedStudents() async {
-    final prefs = await SharedPreferences.getInstance();
-    final cachedData = prefs.getString('cached_students');
-    final cacheTimestamp = prefs.getInt('students_cache_timestamp') ?? 0;
+  /// POST /students/{studentIndex}/register-first-device - Registers first device for student
+  Future<bool> registerFirstDevice({
+    required String studentIndex,
+    required String deviceId,
+    required String deviceName,
+    required String deviceOs,
+    BuildContext? context,
+  }) async {
+    return await ErrorHandler.handleAsyncVoidError(
+      () async {
+        final requestBody = {'deviceId': deviceId, 'deviceName': deviceName, 'deviceOs': deviceOs};
 
-    // Check if cache is too old (24 hours)
-    final cacheAge = DateTime.now().millisecondsSinceEpoch - cacheTimestamp;
-    if (cacheAge > 24 * 60 * 60 * 1000) {
-      throw 'Cached data is too old';
-    }
-
-    if (cachedData != null) {
-      final List<dynamic> decoded = jsonDecode(cachedData);
-      return decoded.map((json) => Student.fromJson(json)).toList();
-    }
-
-    throw 'No cached students available';
+        await _apiClient.post<void>('${ApiEndpoints.students}/$studentIndex/register-first-device', data: requestBody);
+      },
+      '$_repositoryName.registerFirstDevice',
+      showDialog: context != null,
+      context: context,
+    );
   }
 }

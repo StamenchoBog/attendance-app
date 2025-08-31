@@ -1,117 +1,160 @@
-import 'package:logger/logger.dart';
+import 'package:attendance_app/core/utils/error_handler.dart';
+import 'package:attendance_app/data/models/report_enums.dart';
 import 'package:attendance_app/data/services/api/api_client.dart';
 import 'package:attendance_app/data/services/api/api_endpoints.dart';
-import 'package:attendance_app/data/services/service_starter.dart';
-import 'package:attendance_app/data/models/report_enums.dart';
+import 'package:flutter/material.dart';
 
 class ReportRepository {
-  final ApiClient _apiClient = locator<ApiClient>();
-  final Logger _logger = Logger();
+  final ApiClient _apiClient;
+  static const String _repositoryName = 'ReportRepository';
 
-  Future<String> submitReport({
-    required String reportType,
-    required String priority,
+  ReportRepository(this._apiClient);
+
+  /// POST /reports/submit - Submits a new report
+  Future<String?> submitReport({
     required String title,
     required String description,
+    required ReportType reportType,
+    required ReportPriority priority,
     String? stepsToReproduce,
-    String? userInfo,
-    String? deviceInfo,
+    required String studentIndex,
+    String? deviceId,
+    BuildContext? context,
   }) async {
-    try {
-      // Validate input data before sending
-      _validateReportData(title, description, reportType, priority);
+    return await ErrorHandler.handleRepositoryError<String?>(
+      () async {
+        final requestBody = {
+          'title': title,
+          'description': description,
+          'reportType': reportType.serverValue, // Use serverValue instead of .name
+          'priority': priority.serverValue, // Use serverValue instead of .name
+          'studentIndex': studentIndex,
+          if (stepsToReproduce != null) 'stepsToReproduce': stepsToReproduce,
+          if (deviceId != null) 'deviceId': deviceId,
+        };
 
-      final requestBody = <String, dynamic>{
-        'reportType': reportType,
-        'priority': priority,
-        'title': title.trim(),
-        'description': description.trim(),
-        if (stepsToReproduce?.isNotEmpty == true) 'stepsToReproduce': stepsToReproduce!.trim(),
-        if (userInfo?.isNotEmpty == true) 'userInfo': userInfo,
-        if (deviceInfo?.isNotEmpty == true) 'deviceInfo': deviceInfo,
-      };
+        final response = await _apiClient.post<Map<String, dynamic>>(ApiEndpoints.reportsSubmit, data: requestBody);
 
-      _logger.i('Submitting report with type: $reportType, priority: $priority');
-
-      final response = await _apiClient.post<Map<String, dynamic>>(ApiEndpoints.reportsSubmit, data: requestBody);
-
-      return _extractReportId(response.data);
-    } on ApiException catch (e) {
-      _logger.e('API error submitting report: ${e.statusCode} - ${e.message}');
-      throw ReportSubmissionException('Failed to submit report: ${e.message}', e.statusCode);
-    } catch (e) {
-      _logger.e('Unexpected error submitting report: $e');
-      throw const ReportSubmissionException('An unexpected error occurred while submitting the report');
-    }
+        final data = response.data?['data'];
+        if (data == null) {
+          return null;
+        }
+        return data.toString();
+      },
+      _repositoryName,
+      'submitReport',
+      showDialog: context != null,
+      context: context,
+    );
   }
 
-  Future<List<Map<String, dynamic>>> getUserReports(String userId) async {
-    try {
-      final response = await _apiClient.get<Map<String, dynamic>>('${ApiEndpoints.reports}/user/$userId');
+  /// GET /reports/all - Gets all reports
+  Future<List<Map<String, dynamic>>?> getAllReports({BuildContext? context}) async {
+    return await ErrorHandler.handleRepositoryError<List<Map<String, dynamic>>>(
+      () async {
+        final response = await _apiClient.get<Map<String, dynamic>>(ApiEndpoints.reportsAll);
 
-      return List<Map<String, dynamic>>.from(response.data?['data'] ?? []);
-    } on ApiException catch (e) {
-      _logger.e('Failed to get user reports: ${e.message}');
-      throw e.message;
-    } catch (e) {
-      _logger.e('Unexpected error getting user reports: $e');
-      throw 'Unable to load reports.';
-    }
+        final List<dynamic> reportsList = response.data?['data'] ?? [];
+        return reportsList.cast<Map<String, dynamic>>();
+      },
+      _repositoryName,
+      'getAllReports',
+      showDialog: context != null,
+      context: context,
+    );
   }
 
-  void _validateReportData(String title, String description, String reportType, String priority) {
-    if (title.trim().isEmpty) {
-      throw const ReportValidationException('Report title cannot be empty');
-    }
-    if (description.trim().isEmpty) {
-      throw const ReportValidationException('Report description cannot be empty');
-    }
-    if (title.trim().length < 5) {
-      throw const ReportValidationException('Report title must be at least 5 characters long');
-    }
-    if (description.trim().length < 10) {
-      throw const ReportValidationException('Report description must be at least 10 characters long');
-    }
+  /// GET /reports/type/{reportType} - Gets reports by type
+  Future<List<Map<String, dynamic>>?> getReportsByType(String reportType, {BuildContext? context}) async {
+    return await ErrorHandler.handleRepositoryError<List<Map<String, dynamic>>>(
+      () async {
+        final response = await _apiClient.get<Map<String, dynamic>>('${ApiEndpoints.reportsType}/$reportType');
 
-    // Validate enum values
-    if (!ReportType.values.any((type) => type.toString().split('.').last == reportType)) {
-      throw ReportValidationException('Invalid report type: $reportType');
-    }
-    if (!ReportPriority.values.any((prio) => prio.toString().split('.').last == priority)) {
-      throw ReportValidationException('Invalid priority: $priority');
-    }
+        // Updated to handle the new API response structure
+        final List<dynamic> reportsList = response.data?['data'] ?? [];
+        return reportsList.cast<Map<String, dynamic>>();
+      },
+      _repositoryName,
+      'getReportsByType',
+      showDialog: context != null,
+      context: context,
+    );
   }
 
-  String _extractReportId(Map<String, dynamic>? response) {
-    if (response == null || response['data'] == null) {
-      throw Exception('Invalid response format from server');
-    }
+  /// GET /reports/status/{status} - Gets reports by status
+  Future<List<Map<String, dynamic>>?> getReportsByStatus(String status, {BuildContext? context}) async {
+    return await ErrorHandler.handleRepositoryError<List<Map<String, dynamic>>>(
+      () async {
+        final response = await _apiClient.get<Map<String, dynamic>>('${ApiEndpoints.reportsStatus}/$status');
 
-    final data = response['data'];
-    if (data is Map<String, dynamic> && data.containsKey('reportId')) {
-      return data['reportId'].toString();
-    }
-
-    throw Exception('Report ID not found in server response');
+        // Updated to handle the new API response structure
+        final List<dynamic> reportsList = response.data?['data'] ?? [];
+        return reportsList.cast<Map<String, dynamic>>();
+      },
+      _repositoryName,
+      'getReportsByStatus',
+      showDialog: context != null,
+      context: context,
+    );
   }
-}
 
-// Custom exceptions for better error handling
-class ReportSubmissionException implements Exception {
-  final String message;
-  final int? statusCode;
+  /// GET /reports/count - Gets total report count
+  Future<int?> getReportCount({BuildContext? context}) async {
+    return await ErrorHandler.handleRepositoryError<int>(
+      () async {
+        final response = await _apiClient.get<Map<String, dynamic>>(ApiEndpoints.reportsCount);
 
-  const ReportSubmissionException(this.message, [this.statusCode]);
+        final count = response.data?['data'] as int?;
+        return count ?? 0;
+      },
+      _repositoryName,
+      'getReportCount',
+      showDialog: context != null,
+      context: context,
+    );
+  }
 
-  @override
-  String toString() => 'ReportSubmissionException: $message';
-}
+  /// GET /reports/count/new - Gets new report count
+  Future<int?> getNewReportCount({BuildContext? context}) async {
+    return await ErrorHandler.handleRepositoryError<int>(
+      () async {
+        final response = await _apiClient.get<Map<String, dynamic>>(ApiEndpoints.reportsCountNew);
 
-class ReportValidationException implements Exception {
-  final String message;
+        // Updated to handle the new API response structure
+        final count = response.data?['data'] as int?;
+        return count ?? 0;
+      },
+      _repositoryName,
+      'getNewReportCount',
+      showDialog: context != null,
+      context: context,
+    );
+  }
 
-  const ReportValidationException(this.message);
+  /// PUT /reports/{reportId}/status - Updates report status (admin only)
+  Future<Map<String, dynamic>?> updateReportStatus({
+    required String reportId,
+    required String status,
+    String? adminNotes,
+    BuildContext? context,
+  }) async {
+    return await ErrorHandler.handleRepositoryError<Map<String, dynamic>>(
+      () async {
+        final queryParams = <String, String>{'status': status, if (adminNotes != null) 'adminNotes': adminNotes};
 
-  @override
-  String toString() => 'ReportValidationException: $message';
+        final response = await _apiClient.put<Map<String, dynamic>>(
+          '${ApiEndpoints.reports}/$reportId/status',
+          queryParameters: queryParams,
+        );
+
+        // Updated to handle the new API response structure
+        final reportData = response.data?['data'] as Map<String, dynamic>?;
+        return reportData ?? {};
+      },
+      _repositoryName,
+      'updateReportStatus',
+      showDialog: context != null,
+      context: context,
+    );
+  }
 }

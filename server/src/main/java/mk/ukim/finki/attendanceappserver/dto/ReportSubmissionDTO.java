@@ -5,6 +5,8 @@ import lombok.Data;
 import mk.ukim.finki.attendanceappserver.domain.enums.ReportPriority;
 import mk.ukim.finki.attendanceappserver.domain.enums.ReportType;
 
+import java.util.UUID;
+
 @Data
 @Builder
 public class ReportSubmissionDTO {
@@ -13,6 +15,6 @@ public class ReportSubmissionDTO {
     private String title;
     private String description;
     private String stepsToReproduce;
-    private String userInfo;
-    private String deviceInfo;
+    private String studentIndex;
+    private String deviceId;
 }

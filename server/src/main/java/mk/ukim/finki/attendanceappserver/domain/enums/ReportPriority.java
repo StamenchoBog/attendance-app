@@ -1,5 +1,8 @@
 package mk.ukim.finki.attendanceappserver.domain.enums;
 
+import lombok.Getter;
+
+@Getter
 public enum ReportPriority {
     LOW("low"),
     MEDIUM("medium"),
@@ -10,10 +13,6 @@ public enum ReportPriority {
 
     ReportPriority(String value) {
         this.value = value;
-    }
-
-    public String getValue() {
-        return value;
     }
 
     @Override

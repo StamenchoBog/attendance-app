@@ -1,99 +1,67 @@
-import 'dart:convert';
-import 'package:logger/logger.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:attendance_app/core/utils/error_handler.dart';
 import 'package:attendance_app/data/models/subject.dart';
 import 'package:attendance_app/data/services/api/api_client.dart';
 import 'package:attendance_app/data/services/api/api_endpoints.dart';
+import 'package:flutter/material.dart';
 
 class SubjectRepository {
   final ApiClient _apiClient;
-  final Logger _logger = Logger();
+  static const String _repositoryName = 'SubjectRepository';
 
   SubjectRepository(this._apiClient);
 
-  Future<List<Subject>> getSubjectsByProfessorId(String professorId) async {
-    final cacheKey = 'cached_subjects_$professorId';
-    final timestampKey = 'subjects_cache_timestamp_$professorId';
+  /// GET /subjects - Gets all subjects
+  Future<List<Subject>?> getAllSubjects({BuildContext? context}) async {
+    return await ErrorHandler.handleRepositoryError<List<Subject>>(
+      () async {
+        final response = await _apiClient.get<Map<String, dynamic>>(ApiEndpoints.subjects);
 
-    try {
-      // Fetch from API with proper Dio response handling
-      final response = await _apiClient.get<Map<String, dynamic>>('${ApiEndpoints.subjects}/by-professor/$professorId');
-      final data = response.data?['data'] as List;
-      final subjects = data.map((json) => Subject.fromJson(json)).toList();
-
-      // Cache the new data
-      await _cacheSubjects(subjects, cacheKey, timestampKey);
-
-      return subjects;
-    } on ApiException catch (e) {
-      _logger.w('API failed, trying cache: ${e.message}');
-      return await _getCachedSubjects(cacheKey, timestampKey);
-    } catch (e) {
-      _logger.e('Unexpected error getting subjects: $e');
-      // Try cache as fallback
-      try {
-        return await _getCachedSubjects(cacheKey, timestampKey);
-      } catch (cacheError) {
-        _logger.e('Cache also failed: $cacheError');
-        throw 'Unable to load subjects. Please check your connection.';
-      }
-    }
+        // Updated to handle the new API response structure
+        final List<dynamic> subjectsList = response.data?['data'] ?? [];
+        return subjectsList.map((json) => Subject.fromJson(json as Map<String, dynamic>)).toList();
+      },
+      _repositoryName,
+      'getAllSubjects',
+      showDialog: context != null,
+      context: context,
+    );
   }
 
-  Future<List<Subject>> getAllSubjects() async {
-    const cacheKey = 'cached_all_subjects';
-    const timestampKey = 'all_subjects_cache_timestamp';
+  /// GET /subjects/{id} - Gets subject by ID
+  Future<Subject?> getSubjectById(String subjectId, {BuildContext? context}) async {
+    return await ErrorHandler.handleRepositoryError<Subject>(
+      () async {
+        final response = await _apiClient.get<Map<String, dynamic>>('${ApiEndpoints.subjects}/$subjectId');
 
-    try {
-      final response = await _apiClient.get<Map<String, dynamic>>(ApiEndpoints.subjects);
-      final data = response.data?['data'] as List;
-      final subjects = data.map((json) => Subject.fromJson(json)).toList();
+        // Updated to handle the new API response structure
+        final subjectData = response.data?['data'] as Map<String, dynamic>?;
+        if (subjectData == null) {
+          throw Exception('No subject data found');
+        }
 
-      await _cacheSubjects(subjects, cacheKey, timestampKey);
-      return subjects;
-    } on ApiException catch (e) {
-      _logger.w('API failed, trying cache: ${e.message}');
-      return await _getCachedSubjects(cacheKey, timestampKey);
-    } catch (e) {
-      _logger.e('Unexpected error getting all subjects: $e');
-      try {
-        return await _getCachedSubjects(cacheKey, timestampKey);
-      } catch (cacheError) {
-        _logger.e('Cache also failed: $cacheError');
-        throw 'Unable to load subjects. Please check your connection.';
-      }
-    }
+        return Subject.fromJson(subjectData);
+      },
+      _repositoryName,
+      'getSubjectById',
+      showDialog: context != null,
+      context: context,
+    );
   }
 
-  // Private helper methods
-  Future<void> _cacheSubjects(List<Subject> subjects, String cacheKey, String timestampKey) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final subjectsJson = subjects.map((subject) => subject.toJson()).toList();
-      await prefs.setString(cacheKey, jsonEncode(subjectsJson));
-      await prefs.setInt(timestampKey, DateTime.now().millisecondsSinceEpoch);
-    } catch (e) {
-      _logger.w('Failed to cache subjects: $e');
-      // Don't throw, caching is optional
-    }
-  }
+  /// GET /subjects/by-professor/{professorId} - Gets subjects by professor ID
+  Future<List<Subject>?> getSubjectsByProfessorId(String professorId, {BuildContext? context}) async {
+    return await ErrorHandler.handleRepositoryError<List<Subject>>(
+      () async {
+        final response = await _apiClient.get<Map<String, dynamic>>('${ApiEndpoints.subjectsByProfessor}/$professorId');
 
-  Future<List<Subject>> _getCachedSubjects(String cacheKey, String timestampKey) async {
-    final prefs = await SharedPreferences.getInstance();
-    final cachedData = prefs.getString(cacheKey);
-    final cacheTimestamp = prefs.getInt(timestampKey) ?? 0;
-
-    // Check if cache is too old (24 hours)
-    final cacheAge = DateTime.now().millisecondsSinceEpoch - cacheTimestamp;
-    if (cacheAge > 24 * 60 * 60 * 1000) {
-      throw 'Cached data is too old';
-    }
-
-    if (cachedData != null) {
-      final List<dynamic> decoded = jsonDecode(cachedData);
-      return decoded.map((json) => Subject.fromJson(json)).toList();
-    }
-
-    throw 'No cached subjects available';
+        // Updated to handle the new API response structure
+        final List<dynamic> subjectsList = response.data?['data'] ?? [];
+        return subjectsList.map((json) => Subject.fromJson(json as Map<String, dynamic>)).toList();
+      },
+      _repositoryName,
+      'getSubjectsByProfessorId',
+      showDialog: context != null,
+      context: context,
+    );
   }
 }

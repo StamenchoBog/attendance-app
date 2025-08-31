@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:logger/logger.dart';
+
+class _DateTimeUtils {
+  static final Logger _logger = Logger();
+}
 
 /// Parses a time string in HH:MM or HH:MM:SS format into a TimeOfDay object.
 ///
@@ -21,13 +26,11 @@ TimeOfDay? parseHHMM(String timeString) {
       if (hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59) {
         return TimeOfDay(hour: hour, minute: minute);
       } else {
-        // Optional: Log invalid range if needed, or just let it return null
-        // print('Hour or minute out of valid range: H=$hour, M=$minute');
+        _DateTimeUtils._logger.w('Hour or minute out of valid range: H=$hour, M=$minute');
         return null; // Explicitly return null for out-of-range values
       }
     } else {
-      // Optional: Log invalid format if needed
-      // print('Invalid time string format: expected at least HH:MM');
+      _DateTimeUtils._logger.w('Invalid time string format: expected at least HH:MM');
       return null; // Not enough parts for HH:MM
     }
   } catch (e) {
@@ -36,7 +39,7 @@ TimeOfDay? parseHHMM(String timeString) {
     // For a util function, printing or re-throwing are options,
     // but returning null is often preferred for parse functions.
     // Consider the context where this util will be used.
-    // print('Error parsing time string "$timeString": $e');
+    _DateTimeUtils._logger.e('Error parsing time string "$timeString": $e');
     return null; // Return null on any exception during parsing
   }
 }

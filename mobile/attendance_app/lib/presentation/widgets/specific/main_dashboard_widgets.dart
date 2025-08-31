@@ -4,11 +4,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:attendance_app/core/theme/color_palette.dart';
+import 'package:attendance_app/core/theme/app_text_styles.dart';
+import 'package:attendance_app/core/utils/ui_helpers.dart';
+import 'package:attendance_app/core/constants/app_constants.dart';
 import 'package:attendance_app/presentation/screens/profile_overview.dart';
 import 'package:provider/provider.dart';
 import 'package:attendance_app/data/providers/user_provider.dart';
 import 'package:attendance_app/data/models/student.dart';
 import 'package:attendance_app/presentation/widgets/static/helpers/navigation_helpers.dart';
+import 'package:logger/logger.dart';
+
+class _MainDashboardWidgets {
+  static final Logger _logger = Logger();
+}
 
 ///
 /// Helper for Top Chips
@@ -17,22 +25,25 @@ Widget buildTopChip(String label, IconData icon, {required bool isSelected, requ
   return GestureDetector(
     onTap: onTap,
     child: Container(
-      padding: EdgeInsets.symmetric(vertical: 10.h, horizontal: 8.w),
+      padding: EdgeInsets.symmetric(vertical: AppConstants.spacing12, horizontal: AppConstants.spacing8),
       decoration: BoxDecoration(
         color: isSelected ? ColorPalette.darkBlue : ColorPalette.lightestBlue,
-        borderRadius: BorderRadius.circular(10.r),
+        borderRadius: BorderRadius.circular(AppConstants.borderRadius12),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: 18.sp, color: isSelected ? Colors.white : ColorPalette.darkBlue),
-          SizedBox(width: 6.w),
+          Icon(
+            icon,
+            size: AppConstants.iconSizeSmall,
+            color: isSelected ? ColorPalette.pureWhite : ColorPalette.darkBlue,
+          ),
+          UIHelpers.horizontalSpace(AppConstants.spacing8),
           Flexible(
             child: Text(
               label,
-              style: TextStyle(
-                fontSize: 13.sp,
-                color: isSelected ? Colors.white : ColorPalette.darkBlue,
+              style: AppTextStyles.caption.copyWith(
+                color: isSelected ? ColorPalette.pureWhite : ColorPalette.darkBlue,
                 fontWeight: FontWeight.w500,
               ),
               overflow: TextOverflow.ellipsis,
@@ -57,14 +68,14 @@ Widget buildStudentInfoCard(BuildContext context) {
       final Student? student = user is Student ? user : null;
 
       return Container(
-        margin: EdgeInsets.symmetric(horizontal: 4.w),
+        margin: EdgeInsets.symmetric(horizontal: AppConstants.spacing4),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [ColorPalette.darkBlue, ColorPalette.darkBlue.withValues(alpha: 0.8)],
           ),
-          borderRadius: BorderRadius.circular(16.r),
+          borderRadius: BorderRadius.circular(AppConstants.borderRadius16),
           boxShadow: [
             BoxShadow(color: ColorPalette.darkBlue.withValues(alpha: 0.2), blurRadius: 15, offset: const Offset(0, 6)),
           ],
@@ -76,18 +87,18 @@ Widget buildStudentInfoCard(BuildContext context) {
               top: -15,
               right: -15,
               child: Container(
-                width: 60.w,
-                height: 60.w,
+                width: AppConstants.spacing64,
+                height: AppConstants.spacing64,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(30.r),
+                  color: ColorPalette.pureWhite.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(AppConstants.spacing32),
                 ),
               ),
             ),
 
             // Main content
             Padding(
-              padding: EdgeInsets.all(16.w),
+              padding: EdgeInsets.all(AppConstants.spacing16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -97,7 +108,7 @@ Widget buildStudentInfoCard(BuildContext context) {
                       // Profile-style avatar with initials
                       _buildCompactAvatar(student),
 
-                      SizedBox(width: 12.w),
+                      UIHelpers.horizontalSpace(AppConstants.spacing12),
 
                       // Basic info
                       Expanded(
@@ -106,16 +117,18 @@ Widget buildStudentInfoCard(BuildContext context) {
                           children: [
                             Text(
                               student != null ? '${student.firstName} ${student.lastName}' : 'Guest User',
-                              style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold, color: Colors.white),
+                              style: AppTextStyles.bodyLarge.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: ColorPalette.pureWhite,
+                              ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
-                            SizedBox(height: 2.h),
+                            UIHelpers.verticalSpace(AppConstants.spacing4),
                             Text(
                               student?.studentIndex ?? 'N/A',
-                              style: TextStyle(
-                                fontSize: 12.sp,
-                                color: Colors.white.withValues(alpha: 0.8),
+                              style: AppTextStyles.caption.copyWith(
+                                color: ColorPalette.pureWhite.withValues(alpha: 0.8),
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -125,11 +138,11 @@ Widget buildStudentInfoCard(BuildContext context) {
 
                       // Settings button (only one button now)
                       Container(
-                        width: 36.w,
-                        height: 36.w,
+                        width: AppConstants.iconSizeXLarge,
+                        height: AppConstants.iconSizeXLarge,
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(10.r),
+                          color: ColorPalette.pureWhite.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(AppConstants.borderRadius12),
                         ),
                         child: Material(
                           color: Colors.transparent,
@@ -137,15 +150,19 @@ Widget buildStudentInfoCard(BuildContext context) {
                             onTap: () {
                               fastPush(context, const ProfileOverviewScreen());
                             },
-                            borderRadius: BorderRadius.circular(10.r),
-                            child: Icon(CupertinoIcons.settings, color: Colors.white, size: 18.sp),
+                            borderRadius: BorderRadius.circular(AppConstants.borderRadius12),
+                            child: Icon(
+                              CupertinoIcons.settings,
+                              color: ColorPalette.pureWhite,
+                              size: AppConstants.iconSizeSmall,
+                            ),
                           ),
                         ),
                       ),
                     ],
                   ),
 
-                  SizedBox(height: 12.h),
+                  UIHelpers.verticalSpace(AppConstants.spacing12),
 
                   // Compact info row
                   Row(
@@ -159,7 +176,7 @@ Widget buildStudentInfoCard(BuildContext context) {
                           value: student?.studyProgramCode ?? 'N/A',
                         ),
                       ),
-                      SizedBox(width: 8.w),
+                      UIHelpers.horizontalSpace(AppConstants.spacing8),
 
                       // Status
                       Expanded(
@@ -167,7 +184,7 @@ Widget buildStudentInfoCard(BuildContext context) {
                           icon: CupertinoIcons.checkmark_circle_fill,
                           label: 'Status',
                           value: 'Active',
-                          valueColor: Colors.greenAccent,
+                          valueColor: ColorPalette.successColor,
                         ),
                       ),
                     ],
@@ -201,9 +218,12 @@ Widget _buildCompactAvatar(Student? student) {
   final initials = getInitials(displayName);
 
   return CircleAvatar(
-    radius: 24.r, // Compact size for dashboard
-    backgroundColor: Colors.white.withValues(alpha: 0.2),
-    child: Text(initials, style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.bold, color: Colors.white)),
+    radius: AppConstants.iconSizeMedium, // Compact size for dashboard
+    backgroundColor: ColorPalette.pureWhite.withValues(alpha: 0.2),
+    child: Text(
+      initials,
+      style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.bold, color: ColorPalette.pureWhite),
+    ),
   );
 }
 
@@ -215,64 +235,39 @@ Widget _buildCompactInfoCard({
   Color? valueColor,
 }) {
   return Container(
-    padding: EdgeInsets.all(8.w),
+    padding: EdgeInsets.all(AppConstants.spacing8),
     decoration: BoxDecoration(
-      color: Colors.white.withValues(alpha: 0.15),
-      borderRadius: BorderRadius.circular(10.r),
-      border: Border.all(color: Colors.white.withValues(alpha: 0.2), width: 1),
+      color: ColorPalette.pureWhite.withValues(alpha: 0.15),
+      borderRadius: BorderRadius.circular(AppConstants.borderRadius12),
+      border: Border.all(color: ColorPalette.pureWhite.withValues(alpha: 0.2), width: 1),
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            Icon(icon, color: Colors.white.withValues(alpha: 0.8), size: 12.sp),
-            SizedBox(width: 4.w),
+            Icon(icon, color: ColorPalette.pureWhite.withValues(alpha: 0.8), size: AppConstants.iconSizeSmall),
+            UIHelpers.horizontalSpace(AppConstants.spacing4),
             Text(
               label,
-              style: TextStyle(
-                fontSize: 10.sp,
-                color: Colors.white.withValues(alpha: 0.8),
+              style: AppTextStyles.caption.copyWith(
+                color: ColorPalette.pureWhite.withValues(alpha: 0.8),
                 fontWeight: FontWeight.w500,
               ),
             ),
           ],
         ),
-        SizedBox(height: 3.h),
+        UIHelpers.verticalSpace(AppConstants.spacing4),
         Text(
           value,
-          style: TextStyle(fontSize: 12.sp, color: valueColor ?? Colors.white, fontWeight: FontWeight.w600),
+          style: AppTextStyles.caption.copyWith(
+            color: valueColor ?? ColorPalette.pureWhite,
+            fontWeight: FontWeight.w600,
+          ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
       ],
-    ),
-  );
-}
-
-// Compact helper widget for action buttons
-Widget _buildCompactActionButton({required IconData icon, required String label, required VoidCallback onTap}) {
-  return Material(
-    color: Colors.transparent,
-    child: InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(10.r),
-      child: Container(
-        padding: EdgeInsets.symmetric(vertical: 8.h, horizontal: 12.w),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.2),
-          borderRadius: BorderRadius.circular(10.r),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 1),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: Colors.white, size: 14.sp),
-            SizedBox(width: 6.w),
-            Text(label, style: TextStyle(fontSize: 11.sp, color: Colors.white, fontWeight: FontWeight.w600)),
-          ],
-        ),
-      ),
     ),
   );
 }
@@ -289,14 +284,14 @@ Widget buildProfessorInfoCard(BuildContext context) {
       final Professor? professor = user is Professor ? user : null;
 
       return Container(
-        margin: EdgeInsets.symmetric(horizontal: 4.w),
+        margin: EdgeInsets.symmetric(horizontal: AppConstants.spacing4),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [ColorPalette.darkBlue, ColorPalette.darkBlue.withValues(alpha: 0.8)],
           ),
-          borderRadius: BorderRadius.circular(16.r),
+          borderRadius: BorderRadius.circular(AppConstants.borderRadius16),
           boxShadow: [
             BoxShadow(color: ColorPalette.darkBlue.withValues(alpha: 0.2), blurRadius: 15, offset: const Offset(0, 6)),
           ],
@@ -308,18 +303,18 @@ Widget buildProfessorInfoCard(BuildContext context) {
               top: -15,
               right: -15,
               child: Container(
-                width: 60.w,
-                height: 60.w,
+                width: AppConstants.spacing64,
+                height: AppConstants.spacing64,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(30.r),
+                  color: ColorPalette.pureWhite.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(AppConstants.spacing32),
                 ),
               ),
             ),
 
             // Main content
             Padding(
-              padding: EdgeInsets.all(16.w),
+              padding: EdgeInsets.all(AppConstants.spacing16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -329,7 +324,7 @@ Widget buildProfessorInfoCard(BuildContext context) {
                       // Profile-style avatar with initials
                       _buildCompactProfessorAvatar(professor),
 
-                      SizedBox(width: 12.w),
+                      UIHelpers.horizontalSpace(AppConstants.spacing12),
 
                       // Basic info
                       Expanded(
@@ -337,17 +332,19 @@ Widget buildProfessorInfoCard(BuildContext context) {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              professor?.name ?? 'Guest User',
-                              style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold, color: Colors.white),
+                              professor != null ? professor.name : 'Guest User',
+                              style: AppTextStyles.bodyLarge.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: ColorPalette.pureWhite,
+                              ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
-                            SizedBox(height: 2.h),
+                            UIHelpers.verticalSpace(AppConstants.spacing4),
                             Text(
-                              professor?.id ?? 'N/A',
-                              style: TextStyle(
-                                fontSize: 12.sp,
-                                color: Colors.white.withValues(alpha: 0.8),
+                              professor?.title ?? 'Professor',
+                              style: AppTextStyles.caption.copyWith(
+                                color: ColorPalette.pureWhite.withValues(alpha: 0.8),
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -357,11 +354,11 @@ Widget buildProfessorInfoCard(BuildContext context) {
 
                       // Settings button
                       Container(
-                        width: 36.w,
-                        height: 36.w,
+                        width: AppConstants.iconSizeXLarge,
+                        height: AppConstants.iconSizeXLarge,
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(10.r),
+                          color: ColorPalette.pureWhite.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(AppConstants.borderRadius12),
                         ),
                         child: Material(
                           color: Colors.transparent,
@@ -369,29 +366,33 @@ Widget buildProfessorInfoCard(BuildContext context) {
                             onTap: () {
                               fastPush(context, const ProfileOverviewScreen());
                             },
-                            borderRadius: BorderRadius.circular(10.r),
-                            child: Icon(CupertinoIcons.settings, color: Colors.white, size: 18.sp),
+                            borderRadius: BorderRadius.circular(AppConstants.borderRadius12),
+                            child: Icon(
+                              CupertinoIcons.settings,
+                              color: ColorPalette.pureWhite,
+                              size: AppConstants.iconSizeSmall,
+                            ),
                           ),
                         ),
                       ),
                     ],
                   ),
 
-                  SizedBox(height: 12.h),
+                  UIHelpers.verticalSpace(AppConstants.spacing12),
 
                   // Compact info row
                   Row(
                     children: [
-                      // Academic Title
+                      // Office
                       Expanded(
                         flex: 2,
                         child: _buildCompactInfoCard(
-                          icon: CupertinoIcons.person_badge_plus_fill,
-                          label: 'Title',
-                          value: professor?.title ?? 'N/A',
+                          icon: CupertinoIcons.building_2_fill,
+                          label: 'Office',
+                          value: professor?.officeName ?? 'N/A',
                         ),
                       ),
-                      SizedBox(width: 8.w),
+                      UIHelpers.horizontalSpace(AppConstants.spacing8),
 
                       // Status
                       Expanded(
@@ -399,7 +400,7 @@ Widget buildProfessorInfoCard(BuildContext context) {
                           icon: CupertinoIcons.checkmark_circle_fill,
                           label: 'Status',
                           value: 'Active',
-                          valueColor: Colors.greenAccent,
+                          valueColor: ColorPalette.successColor,
                         ),
                       ),
                     ],
@@ -429,13 +430,16 @@ Widget _buildCompactProfessorAvatar(Professor? professor) {
     return initials.toUpperCase();
   }
 
-  final displayName = professor?.name ?? 'Guest User';
+  final displayName = professor != null ? professor.name : 'Guest User';
   final initials = getInitials(displayName);
 
   return CircleAvatar(
-    radius: 24.r, // Compact size for dashboard
-    backgroundColor: Colors.white.withValues(alpha: 0.2),
-    child: Text(initials, style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.bold, color: Colors.white)),
+    radius: AppConstants.iconSizeMedium,
+    backgroundColor: ColorPalette.pureWhite.withValues(alpha: 0.2),
+    child: Text(
+      initials,
+      style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.bold, color: ColorPalette.pureWhite),
+    ),
   );
 }
 
@@ -474,9 +478,16 @@ Widget buildDateTimeChip(String label, IconData icon, VoidCallback onPressed) {
 }
 
 ///
-/// Helper for Class List Items (Updated Style)
+/// Helper for Class List Items - Redesigned Compact Version
 ///
-Widget buildClassListItem(String subjectName, String roomName, String timeString, bool hasClassStarted) {
+Widget buildClassListItem(
+  String subjectName,
+  String roomName,
+  String timeString,
+  bool hasClassStarted, {
+  String? attendanceStatus,
+  bool isReadOnly = false, // Add read-only parameter
+}) {
   String formattedTime = timeString;
 
   if (timeString.isNotEmpty) {
@@ -487,110 +498,175 @@ Widget buildClassListItem(String subjectName, String roomName, String timeString
       }
     } catch (e) {
       if (kDebugMode) {
-        print('Error formatting time: $e');
+        _MainDashboardWidgets._logger.e('Error formatting time: $e');
       }
     }
   }
-  return Card(
-    margin: EdgeInsets.only(bottom: 10.h),
-    elevation: hasClassStarted ? 8.0 : 0,
-    color:
-        hasClassStarted
-            ? ColorPalette.lightestBlue.withValues(alpha: 0.9)
-            : ColorPalette.lightestBlue.withValues(alpha: 0.7),
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(10.r),
-      side: BorderSide(
-        color:
-            hasClassStarted
-                ? ColorPalette.darkBlue.withValues(alpha: 0.3)
-                : ColorPalette.placeholderGrey.withValues(alpha: 0.5),
-        width: hasClassStarted ? 1.5.w : 0.5.w,
-      ),
-    ),
-    child: Container(
-      decoration:
-          hasClassStarted
-              ? BoxDecoration(
-                borderRadius: BorderRadius.circular(10.r),
-                boxShadow: [
-                  BoxShadow(
-                    color: ColorPalette.darkBlue.withValues(alpha: 0.1),
-                    blurRadius: 8.0,
-                    spreadRadius: 1.0,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              )
-              : null,
-      child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
-        child: Row(
-          children: [
-            Container(
-              width: 45.w,
-              height: 45.w,
-              decoration: BoxDecoration(
-                color: hasClassStarted ? ColorPalette.darkBlue.withValues(alpha: 0.1) : ColorPalette.placeholderGrey,
-                borderRadius: BorderRadius.circular(8.r),
-              ),
-              child: Icon(
-                CupertinoIcons.rectangle_on_rectangle_angled,
-                color: hasClassStarted ? ColorPalette.darkBlue : ColorPalette.iconGrey,
-                size: 25.sp,
-              ),
-            ),
 
-            SizedBox(width: 12.w),
+  // Simple status color logic
+  Color _getStatusColor() {
+    if (attendanceStatus == null) return ColorPalette.textSecondary;
 
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    subjectName,
-                    style: TextStyle(
-                      fontSize: 14.sp,
-                      fontWeight: hasClassStarted ? FontWeight.w700 : FontWeight.w600,
-                      color: ColorPalette.textPrimary,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  SizedBox(height: 3.h),
-                  Text(
-                    roomName,
-                    style: TextStyle(fontSize: 12.sp, color: ColorPalette.textSecondary),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
+    switch (attendanceStatus.toLowerCase()) {
+      case 'verified':
+      case 'confirmed':
+      case 'present':
+        return ColorPalette.successColor;
+      case 'registered':
+      case 'pending':
+        return ColorPalette.warningColor;
+      case 'absent':
+      case 'missed':
+        return ColorPalette.errorColor;
+      default:
+        return ColorPalette.textSecondary;
+    }
+  }
 
-            SizedBox(width: 10.w),
+  IconData? _getStatusIcon() {
+    if (attendanceStatus == null) return null;
 
-            Container(
-              padding: hasClassStarted ? EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h) : EdgeInsets.zero,
-              decoration:
-                  hasClassStarted
-                      ? BoxDecoration(
-                        color: ColorPalette.darkBlue.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(6.r),
-                      )
-                      : null,
-              child: Text(
-                formattedTime,
-                style: TextStyle(
-                  fontSize: 13.sp,
-                  color: hasClassStarted ? ColorPalette.darkBlue : ColorPalette.textSecondary,
-                  fontWeight: hasClassStarted ? FontWeight.w600 : FontWeight.w500,
+    switch (attendanceStatus.toLowerCase()) {
+      case 'verified':
+      case 'confirmed':
+      case 'present':
+        return CupertinoIcons.checkmark_circle;
+      case 'registered':
+      case 'pending':
+        return CupertinoIcons.clock;
+      case 'absent':
+      case 'missed':
+        return CupertinoIcons.xmark_circle;
+      default:
+        return CupertinoIcons.question_circle;
+    }
+  }
+
+  return Container(
+    margin: EdgeInsets.only(bottom: 6.h), // Reduced spacing
+    padding: EdgeInsets.all(10.w), // Reduced padding
+    decoration: BoxDecoration(
+      color: isReadOnly ? ColorPalette.lightestBlue.withOpacity(0.3) : ColorPalette.pureWhite,
+      // Dimmed background for read-only
+      borderRadius: BorderRadius.circular(6.r),
+      // Smaller radius
+      border: Border.all(color: isReadOnly ? Colors.grey.shade300 : Colors.grey.shade200, width: 0.8),
+      // Different border for read-only
+      boxShadow:
+          isReadOnly
+              ? []
+              : [
+                BoxShadow(
+                  color: Colors.grey.shade300.withValues(alpha: 0.4), // Lighter shadow
+                  blurRadius: 4.0, // Reduced blur
+                  offset: const Offset(0, 1), // Less offset
                 ),
-              ),
-            ),
-          ],
+              ],
+    ),
+    child: Row(
+      children: [
+        // Status indicator - smaller
+        Container(
+          width: 3.w, // Back to original width
+          height: 36.h, // Shorter height
+          decoration: BoxDecoration(
+            color: isReadOnly ? Colors.grey.shade400 : _getStatusColor(), // Grey indicator for read-only
+            borderRadius: BorderRadius.circular(2.r),
+          ),
         ),
-      ),
+
+        SizedBox(width: 10.w), // Reduced spacing
+        // Content
+        Expanded(
+          child: Opacity(
+            opacity: isReadOnly ? 0.6 : 1.0, // Reduce opacity for read-only classes
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Subject name and status icon
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        subjectName,
+                        style: TextStyle(
+                          fontSize: 13.sp, // Smaller font
+                          fontWeight: FontWeight.w600,
+                          color:
+                              isReadOnly
+                                  ? ColorPalette.textSecondary
+                                  : ColorPalette.textPrimary, // Dimmed text for read-only
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (_getStatusIcon() != null) ...[
+                      Icon(
+                        _getStatusIcon()!,
+                        size: 14.sp, // Smaller icon
+                        color: isReadOnly ? Colors.grey.shade500 : _getStatusColor(), // Grey icon for read-only
+                      ),
+                    ],
+                    // Add a "passed" indicator for read-only classes
+                    if (isReadOnly) ...[
+                      SizedBox(width: 4.w),
+                      Icon(CupertinoIcons.time_solid, size: 12.sp, color: Colors.grey.shade500),
+                    ],
+                  ],
+                ),
+
+                SizedBox(height: 4.h), // Reduced spacing
+                // Room and time
+                Row(
+                  children: [
+                    Icon(
+                      CupertinoIcons.location,
+                      size: 10.sp, // Smaller icon
+                      color: ColorPalette.textSecondary,
+                    ),
+                    SizedBox(width: 3.w),
+                    Text(
+                      roomName,
+                      style: TextStyle(
+                        fontSize: 11.sp, // Smaller font
+                        color: ColorPalette.textSecondary,
+                        fontWeight: FontWeight.w400, // Lighter weight
+                      ),
+                    ),
+                    SizedBox(width: 10.w), // Reduced spacing
+                    Icon(
+                      CupertinoIcons.time,
+                      size: 10.sp, // Smaller icon
+                      color: ColorPalette.textSecondary,
+                    ),
+                    SizedBox(width: 3.w),
+                    Text(
+                      formattedTime,
+                      style: TextStyle(
+                        fontSize: 11.sp, // Smaller font
+                        color: ColorPalette.textSecondary,
+                        fontWeight: FontWeight.w400, // Lighter weight
+                      ),
+                    ),
+                    if (isReadOnly) ...[
+                      SizedBox(width: 8.w),
+                      Text(
+                        '(Passed)',
+                        style: TextStyle(
+                          fontSize: 10.sp,
+                          color: Colors.grey.shade500,
+                          fontWeight: FontWeight.w500,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     ),
   );
 }

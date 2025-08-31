@@ -1,16 +1,17 @@
 import 'package:attendance_app/core/services/device_identifier_service.dart';
 import 'package:attendance_app/core/utils/error_message_helper.dart';
 import 'package:attendance_app/core/utils/notification_helper.dart';
+import 'package:attendance_app/core/theme/app_text_styles.dart';
+import 'package:attendance_app/core/utils/ui_helpers.dart';
+import 'package:attendance_app/core/constants/app_constants.dart';
 import 'package:attendance_app/data/models/student.dart';
 import 'package:attendance_app/data/providers/date_provider.dart';
 import 'package:attendance_app/data/providers/time_provider.dart';
 import 'package:attendance_app/presentation/screens/qr_scanner_screen.dart';
 import 'package:attendance_app/presentation/widgets/specific/class_details_bottom_sheet.dart';
 import 'package:attendance_app/presentation/widgets/dialogs/first_time_device_registration_dialog.dart';
-import 'package:attendance_app/presentation/widgets/common/custom_date_time_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 import 'package:attendance_app/core/theme/color_palette.dart';
 import 'package:provider/provider.dart';
@@ -151,13 +152,12 @@ class _StudentDashboardState extends State<StudentDashboard> {
     }
   }
 
-  void _onClassTapped(Map<String, dynamic> classData) async {
+  void _onClassTapped(Map<String, dynamic> classData, bool hasPassed) async {
     final user = Provider.of<UserProvider>(context, listen: false).currentUser as Student?;
     if (user == null) return;
 
     final deviceProvider = Provider.of<DeviceProvider>(context, listen: false);
     if (deviceProvider.isLoading) {
-      // Optionally show a loading indicator
       return;
     }
 
@@ -182,11 +182,10 @@ class _StudentDashboardState extends State<StudentDashboard> {
       builder:
           (context) => ClassDetailsBottomSheet(
             classData: classData,
+            hasPassed: hasPassed,
             onVerifyAttendance: () {
-              Navigator.of(context).pop(); // Close the bottom sheet
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => QrScannerScreen(studentIndex: user.studentIndex, deviceId: deviceId)),
-              );
+              Navigator.of(context).pop();
+              fastPush(context, QrScannerScreen(studentIndex: user.studentIndex, deviceId: deviceId));
             },
           ),
     );
@@ -220,11 +219,15 @@ class _StudentDashboardState extends State<StudentDashboard> {
 
   Future<void> _selectTime(BuildContext context) async {
     final timeProvider = Provider.of<TimeProvider>(context, listen: false);
-    final TimeOfDay? picked = await CustomDateTimePicker.showTimePicker(
-      context,
+    final TimeOfDay? picked = await showTimePicker(
+      context: context,
       initialTime: timeProvider.selectedTime,
-      title: 'Select Time',
-      use24HourFormat: true,
+      builder: (BuildContext context, Widget? child) {
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
     );
     if (picked != null && picked != timeProvider.selectedTime) {
       timeProvider.updateTime(picked);
@@ -235,8 +238,8 @@ class _StudentDashboardState extends State<StudentDashboard> {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     final dateProvider = Provider.of<DateProvider>(context, listen: false);
     final timeProvider = Provider.of<TimeProvider>(context, listen: false);
-    final user = userProvider.currentUser;
 
+    final user = userProvider.currentUser;
     if (user == null || user is! Student) {
       _logger.e('No student found or user is not a student');
       return [];
@@ -253,7 +256,17 @@ class _StudentDashboardState extends State<StudentDashboard> {
       timeProvider.selectedTime.minute,
     );
 
-    return await _classSessionRepository.getClassSessionsByStudentAndDateTime(studentIndex, selectedDateTime);
+    final dateFormatter = DateFormat('yyyy-MM-dd HH:mm:ss.SSS');
+    final formattedDateTime = dateFormatter.format(selectedDateTime);
+
+    final classes = await _classSessionRepository.getClassSessionsByStudentIndexForGivenDateAndTime(
+      studentIndex: studentIndex,
+      dateTime: formattedDateTime,
+      context: context,
+    );
+
+    // API returns ClassSessionOverview objects which are already Maps
+    return classes ?? [];
   }
 
   Future<void> _checkDeviceRegistration() async {
@@ -330,11 +343,11 @@ class _StudentDashboardState extends State<StudentDashboard> {
       backgroundColor: Colors.white,
       body: SafeArea(
         child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 20.w),
+          padding: EdgeInsets.symmetric(horizontal: AppConstants.spacing20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SizedBox(height: 15.h),
+              UIHelpers.verticalSpace(AppConstants.spacing16),
 
               AppTopBar(
                 searchHintText: 'Search by subject, room, professor...',
@@ -346,11 +359,11 @@ class _StudentDashboardState extends State<StudentDashboard> {
                 },
               ),
 
-              SizedBox(height: 15.h),
+              UIHelpers.verticalSpace(AppConstants.spacing16),
 
               buildStudentInfoCard(context),
 
-              SizedBox(height: 15.h),
+              UIHelpers.verticalSpace(AppConstants.spacing16),
 
               Row(
                 children: [
@@ -359,7 +372,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                     CupertinoIcons.calendar,
                     () => _selectDate(context),
                   ),
-                  SizedBox(width: 15.w),
+                  UIHelpers.horizontalSpace(AppConstants.spacing16),
                   buildDateTimeChip(
                     DateFormat('HH:mm').format(
                       DateTime(
@@ -377,7 +390,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                 ],
               ),
 
-              SizedBox(height: 10.h),
+              UIHelpers.verticalSpace(AppConstants.spacing12),
 
               Expanded(
                 child:
@@ -388,14 +401,18 @@ class _StudentDashboardState extends State<StudentDashboard> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(CupertinoIcons.exclamationmark_triangle, size: 50.sp, color: ColorPalette.iconGrey),
-                              SizedBox(height: 16.h),
+                              Icon(
+                                CupertinoIcons.exclamationmark_triangle,
+                                size: AppConstants.iconSizeXLarge,
+                                color: ColorPalette.iconGrey,
+                              ),
+                              UIHelpers.verticalSpaceMedium,
                               Text(
                                 _errorMessage!,
-                                style: TextStyle(fontSize: 14.sp, color: ColorPalette.textSecondary),
+                                style: AppTextStyles.bodyMedium.copyWith(color: ColorPalette.textSecondary),
                                 textAlign: TextAlign.center,
                               ),
-                              SizedBox(height: 16.h),
+                              UIHelpers.verticalSpaceMedium,
                               ElevatedButton(onPressed: _loadClasses, child: Text('Retry')),
                             ],
                           ),
@@ -405,15 +422,19 @@ class _StudentDashboardState extends State<StudentDashboard> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(CupertinoIcons.search_circle, size: 50.sp, color: ColorPalette.iconGrey),
-                              SizedBox(height: 16.h),
+                              Icon(
+                                CupertinoIcons.search_circle,
+                                size: AppConstants.iconSizeXLarge,
+                                color: ColorPalette.iconGrey,
+                              ),
+                              UIHelpers.verticalSpaceMedium,
                               Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 20.w),
+                                padding: EdgeInsets.symmetric(horizontal: AppConstants.spacing20),
                                 child: Text(
                                   _searchQuery.isEmpty
                                       ? 'No classes scheduled for the selected time/date.'
                                       : 'No classes found for "$_searchQuery".',
-                                  style: TextStyle(fontSize: 14.sp, color: ColorPalette.textSecondary),
+                                  style: AppTextStyles.bodyMedium.copyWith(color: ColorPalette.textSecondary),
                                   textAlign: TextAlign.center,
                                 ),
                               ),
@@ -421,7 +442,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                           ),
                         )
                         : ListView.builder(
-                          padding: EdgeInsets.only(top: 5.h),
+                          padding: EdgeInsets.only(top: AppConstants.spacing8),
                           itemCount: _filteredClasses.length,
                           itemBuilder: (context, index) {
                             final classData = _filteredClasses[index];
@@ -429,41 +450,59 @@ class _StudentDashboardState extends State<StudentDashboard> {
                             final startTimeString = classData['classStartTime'] as String?;
                             final endTimeString = classData['classEndTime'] as String?;
                             bool isOngoing = false;
+                            bool hasPassed = false;
 
                             if (startTimeString != null && endTimeString != null) {
                               try {
                                 final startParts = startTimeString.split(':');
                                 final endParts = endTimeString.split(':');
-                                final selectedDate = dateState.selectedDate;
+
+                                // For determining if class has passed, we need to compare with the actual class date
+                                // Get the class date from the selected date (since that's what we fetched)
+                                final dateProvider = Provider.of<DateProvider>(context, listen: false);
+                                final classDate = dateProvider.selectedDate;
 
                                 final classStartDateTime = DateTime(
-                                  selectedDate.year,
-                                  selectedDate.month,
-                                  selectedDate.day,
+                                  classDate.year,
+                                  classDate.month,
+                                  classDate.day,
                                   int.parse(startParts[0]),
                                   int.parse(startParts[1]),
                                 );
                                 final classEndDateTime = DateTime(
-                                  selectedDate.year,
-                                  selectedDate.month,
-                                  selectedDate.day,
+                                  classDate.year,
+                                  classDate.month,
+                                  classDate.day,
                                   int.parse(endParts[0]),
                                   int.parse(endParts[1]),
                                 );
 
-                                isOngoing = now.isAfter(classStartDateTime) && now.isBefore(classEndDateTime);
+                                // Check if class is currently ongoing (only for today's classes)
+                                final isToday =
+                                    classDate.year == now.year &&
+                                    classDate.month == now.month &&
+                                    classDate.day == now.day;
+
+                                if (isToday) {
+                                  isOngoing = now.isAfter(classStartDateTime) && now.isBefore(classEndDateTime);
+                                }
+
+                                // Check if class has passed (ended) - this should make it read-only
+                                hasPassed = now.isAfter(classEndDateTime);
                               } catch (e) {
                                 _logger.e("Error parsing class time: $e");
                               }
                             }
 
                             return GestureDetector(
-                              onTap: () => _onClassTapped(classData),
+                              onTap: () => _onClassTapped(classData, hasPassed), // Pass hasPassed to the tap handler
                               child: buildClassListItem(
                                 classData['subjectName'] ?? 'N/A',
                                 classData['classRoomName'] ?? 'N/A',
                                 classData['classStartTime'] ?? 'N/A',
                                 isOngoing,
+                                attendanceStatus: classData['attendanceStatus'],
+                                isReadOnly: hasPassed, // Pass the read-only status
                               ),
                             );
                           },

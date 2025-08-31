@@ -1,11 +1,13 @@
 import 'package:attendance_app/core/theme/color_palette.dart';
+import 'package:attendance_app/core/theme/app_text_styles.dart';
+import 'package:attendance_app/core/utils/ui_helpers.dart';
+import 'package:attendance_app/core/constants/app_constants.dart';
 import 'package:attendance_app/data/providers/user_provider.dart';
 import 'package:attendance_app/presentation/screens/professor_dashboard.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:attendance_app/presentation/screens/student_dashboard.dart';
 import 'package:attendance_app/presentation/screens/cas_login_screen.dart';
 import 'package:attendance_app/data/services/api/api_roles.dart';
@@ -51,23 +53,15 @@ class SignInScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // --- Style Assumptions ---
-    const Color primaryTextColor = Colors.black87;
-    const Color secondaryTextColor = Colors.black54;
-    const Color linkColor = ColorPalette.darkBlue;
-    const Color buttonBackgroundColor = Color(0xFFF0F0F0);
-    const Color buttonTextColor = Colors.black87;
-    // --- End Style Assumptions ---
-
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: ColorPalette.pureWhite,
       body: SafeArea(
         child: Stack(
           children: [
             if (kDebugMode)
               Positioned(
-                top: 10.h,
-                right: 10.w,
+                top: AppConstants.spacing12,
+                right: AppConstants.spacing12,
                 child: PopupMenuButton<String>(
                   onSelected: (String result) {
                     if (result == 'student') {
@@ -80,14 +74,30 @@ class SignInScreen extends StatelessWidget {
                   },
                   itemBuilder:
                       (BuildContext context) => <PopupMenuEntry<String>>[
-                        const PopupMenuItem<String>(value: 'student', child: Text('Login as Student (Dev)')),
-                        const PopupMenuItem<String>(value: 'professor', child: Text('Login as Professor (Dev)')),
+                        PopupMenuItem<String>(
+                          value: 'student',
+                          child: Text(
+                            'Login as Student (Dev)',
+                            style: AppTextStyles.bodyMedium.copyWith(color: ColorPalette.textPrimary),
+                          ),
+                        ),
+                        PopupMenuItem<String>(
+                          value: 'professor',
+                          child: Text(
+                            'Login as Professor (Dev)',
+                            style: AppTextStyles.bodyMedium.copyWith(color: ColorPalette.textPrimary),
+                          ),
+                        ),
                       ],
-                  icon: const Icon(CupertinoIcons.arrow_down_right_square, color: Colors.grey),
+                  icon: Icon(
+                    CupertinoIcons.arrow_down_right_square,
+                    color: ColorPalette.iconGrey,
+                    size: AppConstants.iconSizeMedium,
+                  ),
                 ),
               ),
             Padding(
-              padding: EdgeInsets.symmetric(horizontal: 22.w),
+              padding: EdgeInsets.symmetric(horizontal: AppConstants.spacing20),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -95,84 +105,96 @@ class SignInScreen extends StatelessWidget {
                   const Spacer(flex: 2),
 
                   // --- Logo ---
-                  Image(image: const AssetImage('assets/logo/finki_logo.png'), height: 60.h, fit: BoxFit.contain),
+                  Image(
+                    image: const AssetImage('assets/logo/finki_logo.png'),
+                    height: AppConstants.spacing64,
+                    fit: BoxFit.contain,
+                  ),
 
                   // --- End Logo ---
-                  SizedBox(height: 16.h),
+                  UIHelpers.verticalSpace(AppConstants.spacing16),
 
                   // --- App Title ---
                   Text(
                     'Attendance Verifier',
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 22.sp, fontWeight: FontWeight.bold, color: primaryTextColor),
+                    style: AppTextStyles.heading1.copyWith(color: ColorPalette.textPrimary),
                   ),
 
                   // --- End App Title ---
-                  SizedBox(height: 48.h),
+                  UIHelpers.verticalSpaceXLarge,
 
                   // --- Section Title ---
                   Text(
                     'Sign-in',
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 19.sp, fontWeight: FontWeight.bold, color: primaryTextColor),
+                    style: AppTextStyles.heading2.copyWith(color: ColorPalette.textPrimary),
                   ),
 
                   // --- End Section Title ---
-                  SizedBox(height: 8.h),
+                  UIHelpers.verticalSpaceSmall,
 
                   // --- Subtitle ---
                   Text(
                     'Login via the Central Authentication System',
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 13.sp, color: secondaryTextColor),
+                    style: AppTextStyles.bodyMedium.copyWith(color: ColorPalette.textSecondary),
                   ),
 
                   // --- End Subtitle ---
-                  SizedBox(height: 24.h),
+                  UIHelpers.verticalSpaceLarge,
 
                   // --- Sign In Button ---
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: buttonBackgroundColor,
-                      foregroundColor: buttonTextColor,
+                      backgroundColor: ColorPalette.buttonBackgroundLight,
+                      foregroundColor: ColorPalette.textPrimary,
                       elevation: 0,
-                      padding: EdgeInsets.symmetric(vertical: 15.h),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
+                      padding: EdgeInsets.symmetric(vertical: AppConstants.spacing16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppConstants.borderRadius8)),
                     ),
                     onPressed: () => _handleCasSignIn(context),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Image(image: const AssetImage('assets/logo/cas_logo.png'), height: 24.h),
-                        SizedBox(width: 11.w),
-                        Text('Continue with CAS', style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w500)),
+                        Image(image: const AssetImage('assets/logo/cas_logo.png'), height: AppConstants.iconSizeMedium),
+                        UIHelpers.horizontalSpace(AppConstants.spacing12),
+                        Text(
+                          'Continue with CAS',
+                          style: AppTextStyles.bodyLarge.copyWith(
+                            fontWeight: FontWeight.w500,
+                            color: ColorPalette.textPrimary,
+                          ),
+                        ),
                       ],
                     ),
                   ),
 
                   // --- End Sign In Button ---
-                  SizedBox(height: 24.h),
+                  UIHelpers.verticalSpace(AppConstants.spacing24),
 
                   // --- Disclaimer Text ---
                   RichText(
                     textAlign: TextAlign.center,
                     text: TextSpan(
-                      style: TextStyle(
-                        fontSize: 11.sp,
-                        color: secondaryTextColor,
-                        height: 1.4, // Line height often doesn't need scaling
-                      ),
+                      style: AppTextStyles.caption.copyWith(color: ColorPalette.textSecondary, height: 1.4),
                       children: <TextSpan>[
                         const TextSpan(text: 'By clicking continue, you agree to our '),
                         TextSpan(
                           text: 'Terms of Service',
-                          style: const TextStyle(color: linkColor, decoration: TextDecoration.underline),
+                          style: AppTextStyles.caption.copyWith(
+                            color: ColorPalette.darkBlue,
+                            decoration: TextDecoration.underline,
+                          ),
                           recognizer: TapGestureRecognizer()..onTap = _openTermsOfService,
                         ),
                         const TextSpan(text: ' and '),
                         TextSpan(
                           text: 'Privacy Policy',
-                          style: const TextStyle(color: linkColor, decoration: TextDecoration.underline),
+                          style: AppTextStyles.caption.copyWith(
+                            color: ColorPalette.darkBlue,
+                            decoration: TextDecoration.underline,
+                          ),
                           recognizer: TapGestureRecognizer()..onTap = _openPrivacyPolicy,
                         ),
                       ],

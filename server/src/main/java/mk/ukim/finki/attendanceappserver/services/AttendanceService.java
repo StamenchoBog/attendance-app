@@ -3,26 +3,26 @@ package mk.ukim.finki.attendanceappserver.services;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import mk.ukim.finki.attendanceappserver.domain.enums.AttendanceStatus;
+import mk.ukim.finki.attendanceappserver.domain.models.ProfessorClassSession;
 import mk.ukim.finki.attendanceappserver.dto.AttendanceConfirmationRequestDTO;
 import mk.ukim.finki.attendanceappserver.dto.AttendanceRegistrationRequestDTO;
 import mk.ukim.finki.attendanceappserver.dto.db.CustomStudentAttendance;
 import mk.ukim.finki.attendanceappserver.dto.AttendanceSummaryDTO;
-import mk.ukim.finki.attendanceappserver.dto.ProximityDetectionDTO;
 import mk.ukim.finki.attendanceappserver.dto.ProximityVerificationRequestDTO;
-import mk.ukim.finki.attendanceappserver.dto.ProximityVerificationResponseDTO;
 import mk.ukim.finki.attendanceappserver.domain.repositories.ClassSessionRepository;
 import mk.ukim.finki.attendanceappserver.domain.repositories.StudentAttendanceRepository;
-import mk.ukim.finki.attendanceappserver.domain.repositories.ProximityVerificationRepository;
 import mk.ukim.finki.attendanceappserver.domain.models.StudentAttendance;
-import mk.ukim.finki.attendanceappserver.domain.models.ProximityVerificationLog;
+import mk.ukim.finki.attendanceappserver.services.shared.ProximityAnalysisService;
+import mk.ukim.finki.attendanceappserver.services.shared.AttendanceUpdateService;
+
 import org.springframework.stereotype.Service;
+
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.annotation.NonNull;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Slf4j
 @Service
@@ -33,7 +33,8 @@ public class AttendanceService {
     private final ClassSessionRepository classSessionRepository;
     private final StudentService studentService;
     private final DeviceManagementService deviceManagementService;
-    private final ProximityVerificationRepository proximityVerificationRepository;
+    private final AttendanceUpdateService attendanceUpdateService;
+    private final ProximityVerificationService proximityVerificationService;
 
     public Mono<CustomStudentAttendance> getStudentAttendanceById(@NonNull int studentAttendanceId) {
         log.info("Retrieving student attendance with ID [{}]", studentAttendanceId);
@@ -56,46 +57,12 @@ public class AttendanceService {
         log.info("Registering attendance for student with index [{}] with token [{}] from device [{}].",
                 dto.getStudentIndex(), dto.getToken(), dto.getDeviceId());
 
-        return studentService.isStudentValid(dto.getStudentIndex())
-                .flatMap(isValid -> {
-                    if (Boolean.FALSE.equals(isValid)) {
-                        return Mono.error(new IllegalArgumentException("Student is not valid or not enrolled in the current semester."));
-                    }
-                    
-                    // Verify device is registered and approved for this student
-                    return deviceManagementService.isDeviceApprovedForStudent(dto.getStudentIndex(), dto.getDeviceId())
-                            .flatMap(isDeviceApproved -> {
-                                if (Boolean.FALSE.equals(isDeviceApproved)) {
-                                    return Mono.error(new IllegalArgumentException("DEVICE_NOT_REGISTERED"));
-                                }
-                                
-                                return classSessionRepository.findByAttendanceToken(dto.getToken())
-                                        .switchIfEmpty(Mono.error(new IllegalArgumentException("Invalid attendance token.")))
-                                        .flatMap(session -> {
-                                            if (session.getTokenExpirationTime().isBefore(LocalDateTime.now())) {
-                                                return Mono.error(new IllegalArgumentException("Attendance token has expired."));
-                                            }
-
-                                            return studentAttendanceRepository.existsStudentAttendanceByStudentIndexAndProfessorClassSessionId(
-                                                    dto.getStudentIndex(), session.getId())
-                                                    .flatMap(exists -> {
-                                                        if (Boolean.TRUE.equals(exists)) {
-                                                            return Mono.error(new IllegalArgumentException("Attendance already registered for this session."));
-                                                        }
-
-                                                        StudentAttendance newAttendance = StudentAttendance.builder()
-                                                                .studentIndex(dto.getStudentIndex())
-                                                                .professorClassSessionId(session.getId())
-                                                                .status(AttendanceStatus.PENDING_VERIFICATION)
-                                                                .arrivalTime(LocalDateTime.now())
-                                                                .build();
-
-                                                        return studentAttendanceRepository.save(newAttendance)
-                                                                .map(StudentAttendance::getId);
-                                                    });
-                                        });
-                            });
-                });
+        return validateStudentAndDevice(dto)
+                .flatMap(valid -> findAndValidateSession(dto.getToken()))
+                .flatMap(session -> handleAttendanceRecord(dto.getStudentIndex(), session.getId()))
+                .flatMap(attendanceId -> handleProximityVerificationIfProvided(dto, attendanceId))
+                .doOnSuccess(attendanceId -> log.info("Successfully registered attendance with ID [{}] for student [{}]",
+                        attendanceId, dto.getStudentIndex()));
     }
 
     public Mono<Void> confirmAttendance(AttendanceConfirmationRequestDTO dto) {
@@ -107,14 +74,7 @@ public class AttendanceService {
                     if (attendance.getStatus() != AttendanceStatus.PENDING_VERIFICATION) {
                         return Mono.error(new IllegalStateException("Attendance is not pending verification."));
                     }
-
-                    if ("NEAR".equals(dto.getProximity()) || "MEDIUM".equals(dto.getProximity())) {
-                        attendance.setStatus(AttendanceStatus.PRESENT);
-                    } else {
-                        attendance.setStatus(AttendanceStatus.ABSENT);
-                    }
-                    attendance.setProximity(dto.getProximity());
-                    return studentAttendanceRepository.save(attendance);
+                    return attendanceUpdateService.updateAttendanceStatusForManualProximity(attendance, dto.getProximity());
                 }).then();
     }
 
@@ -128,7 +88,7 @@ public class AttendanceService {
                     int absences = totalClasses - attendedClasses;
 
                     return new AttendanceSummaryDTO(
-                            Math.round(percentage * 100.0) / 100.0, // Round to two decimal places
+                            Math.round(percentage * 100.0) / 100.0,
                             attendedClasses,
                             totalClasses,
                             absences
@@ -137,142 +97,134 @@ public class AttendanceService {
                 .defaultIfEmpty(new AttendanceSummaryDTO(0, 0, 0, 0));
     }
 
-    /**
-     * Enhanced proximity verification for BLE beacon system
-     */
-    public Mono<ProximityVerificationResponseDTO> verifyProximityWithBeacon(ProximityVerificationRequestDTO request) {
-        log.info("Processing BLE beacon proximity verification for student [{}] with {} detections",
-                request.getStudentIndex(), request.getProximityDetections().size());
-
-        return validateProximityRequest(request)
-                .flatMap(valid -> analyzeProximityDetections(request))
-                .flatMap(response -> updateAttendanceWithProximityResult(request, response))
-                .flatMap(response -> logProximityVerificationSummary(request, response))
-                .doOnSuccess(response -> log.info("BLE proximity verification completed for student [{}]: {}",
-                        request.getStudentIndex(), response.getVerificationStatus()));
-    }
+    // Private helper methods for attendance registration
 
     /**
-     * Log individual proximity detection during verification
+     * Validates that the student exists and has an approved device
      */
-    public Mono<Void> logProximityDetection(ProximityDetectionDTO detection) {
-        log.debug("Logging proximity detection for student [{}]: {} at {}m",
-                detection.getStudentIndex(), detection.getProximityLevel(), detection.getEstimatedDistance());
-
-        ProximityVerificationLog logEntry = ProximityVerificationLog.builder()
-                .studentIndex(detection.getStudentIndex())
-                .beaconDeviceId(detection.getBeaconDeviceId())
-                .detectedRoomId(detection.getDetectedRoomId())
-                .rssi(detection.getRssi())
-                .proximityLevel(detection.getProximityLevel())
-                .estimatedDistance(detection.getEstimatedDistance())
-                .verificationTimestamp(detection.getDetectionTimestamp())
-                .verificationStatus("ONGOING")
-                .beaconType(detection.getBeaconType())
-                .sessionToken(detection.getSessionToken())
-                .build();
-
-        return proximityVerificationRepository.save(logEntry).then();
-    }
-
-    private Mono<Boolean> validateProximityRequest(ProximityVerificationRequestDTO request) {
-        if (request.getProximityDetections() == null || request.getProximityDetections().isEmpty()) {
-            return Mono.error(new IllegalArgumentException("No proximity detections provided"));
-        }
-        return Mono.just(true);
-    }
-
-    private Mono<ProximityVerificationResponseDTO> analyzeProximityDetections(ProximityVerificationRequestDTO request) {
-        List<ProximityDetectionDTO> detections = request.getProximityDetections();
-
-        // Calculate verification metrics
-        long validDetections = detections.stream()
-                .filter(d -> "NEAR".equals(d.getProximityLevel()) || "MEDIUM".equals(d.getProximityLevel()))
-                .count();
-
-        long wrongRoomDetections = detections.stream()
-                .filter(d -> !request.getExpectedRoomId().equals(d.getDetectedRoomId()))
-                .count();
-
-        double averageDistance = detections.stream()
-                .mapToDouble(ProximityDetectionDTO::getEstimatedDistance)
-                .average()
-                .orElse(Double.MAX_VALUE);
-
-        boolean roomMismatch = wrongRoomDetections > 0;
-        boolean insufficientProximity = validDetections < (detections.size() * 0.7); // 70% threshold
-        boolean tooFar = averageDistance > 5.0; // 5 meter threshold
-
-        // Build response
-        ProximityVerificationResponseDTO response = new ProximityVerificationResponseDTO();
-        response.setTotalDetections(detections.size());
-        response.setValidDetections((int) validDetections);
-        response.setAverageDistance(averageDistance);
-        response.setDetectedRoomId(detections.get(0).getDetectedRoomId());
-        response.setExpectedRoomId(request.getExpectedRoomId());
-        response.setVerificationStartTime(detections.get(0).getDetectionTimestamp());
-        response.setVerificationEndTime(detections.get(detections.size() - 1).getDetectionTimestamp());
-
-        if (roomMismatch) {
-            response.setVerificationSuccess(false);
-            response.setVerificationStatus("WRONG_ROOM");
-            response.setFailureReason("Student detected in wrong classroom");
-        } else if (insufficientProximity) {
-            response.setVerificationSuccess(false);
-            response.setVerificationStatus("FAILED");
-            response.setFailureReason("Insufficient proximity readings during verification period");
-        } else if (tooFar) {
-            response.setVerificationSuccess(false);
-            response.setVerificationStatus("FAILED");
-            response.setFailureReason("Average distance too far from beacon");
-        } else {
-            response.setVerificationSuccess(true);
-            response.setVerificationStatus("SUCCESS");
-        }
-
-        return Mono.just(response);
-    }
-
-    private Mono<ProximityVerificationResponseDTO> updateAttendanceWithProximityResult(
-            ProximityVerificationRequestDTO request,
-            ProximityVerificationResponseDTO response) {
-
-        if (request.getAttendanceId() == null) {
-            return Mono.just(response);
-        }
-
-        return studentAttendanceRepository.findById(request.getAttendanceId())
-                .flatMap(attendance -> {
-                    if (response.getVerificationSuccess()) {
-                        attendance.setStatus(AttendanceStatus.PRESENT);
-                        attendance.setProximity("BEACON_VERIFIED_" + response.getAverageDistance().intValue() + "M");
-                    } else {
-                        attendance.setStatus(AttendanceStatus.ABSENT);
-                        attendance.setProximity("BEACON_FAILED_" + response.getVerificationStatus());
+    private Mono<Boolean> validateStudentAndDevice(AttendanceRegistrationRequestDTO dto) {
+        return studentService.isStudentValid(dto.getStudentIndex())
+                .flatMap(isValid -> {
+                    if (Boolean.FALSE.equals(isValid)) {
+                        return Mono.error(new IllegalArgumentException("Student is not valid or not enrolled in the current semester."));
                     }
-                    return studentAttendanceRepository.save(attendance);
-                })
-                .then(Mono.just(response))
-                .onErrorReturn(response);
+
+                    return deviceManagementService.isDeviceApprovedForStudent(dto.getStudentIndex(), dto.getDeviceId())
+                            .flatMap(isDeviceApproved -> {
+                                if (Boolean.FALSE.equals(isDeviceApproved)) {
+                                    return Mono.error(new IllegalArgumentException("DEVICE_NOT_REGISTERED"));
+                                }
+                                return Mono.just(true);
+                            });
+                });
     }
 
-    private Mono<ProximityVerificationResponseDTO> logProximityVerificationSummary(
-            ProximityVerificationRequestDTO request,
-            ProximityVerificationResponseDTO response) {
+    /**
+     * Finds a class session by attendance token and validates it's not expired
+     */
+    private Mono<ProfessorClassSession> findAndValidateSession(String token) {
+        return classSessionRepository.findByAttendanceToken(token)
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Invalid attendance token.")))
+                .flatMap(session -> {
+                    if (session.getTokenExpirationTime().isBefore(LocalDateTime.now())) {
+                        return Mono.error(new IllegalArgumentException("Attendance token has expired."));
+                    }
+                    return Mono.just(session);
+                });
+    }
 
-        ProximityVerificationLog summaryLog = ProximityVerificationLog.builder()
-                .studentAttendanceId(request.getAttendanceId())
-                .studentIndex(request.getStudentIndex())
-                .detectedRoomId(response.getDetectedRoomId())
-                .expectedRoomId(response.getExpectedRoomId())
-                .estimatedDistance(response.getAverageDistance())
-                .verificationTimestamp(LocalDateTime.now())
-                .verificationStatus(response.getVerificationStatus())
-                .verificationDurationSeconds(request.getVerificationDurationSeconds())
-                .sessionToken(request.getSessionToken())
+    /**
+     * Handles the creation or update of an attendance record
+     */
+    private Mono<Integer> handleAttendanceRecord(String studentIndex, int sessionId) {
+        return studentAttendanceRepository.existsStudentAttendanceByStudentIndexAndProfessorClassSessionId(
+                        studentIndex, sessionId)
+                .flatMap(exists -> {
+                    if (Boolean.TRUE.equals(exists)) {
+                        return updateExistingAttendanceRecord(studentIndex, sessionId);
+                    } else {
+                        return createAndSaveNewAttendanceRecord(studentIndex, sessionId);
+                    }
+                });
+    }
+
+    /**
+     * Updates an existing attendance record
+     */
+    private Mono<Integer> updateExistingAttendanceRecord(String studentIndex, int sessionId) {
+        log.info("Student [{}] already has an attendance record for session [{}]. Getting existing record.",
+                studentIndex, sessionId);
+
+        return studentAttendanceRepository.findByStudentIndexAndProfessorClassSessionId(studentIndex, sessionId)
+                .flatMap(existingAttendance -> {
+                    // Update the arrival time
+                    existingAttendance.setArrivalTime(LocalDateTime.now());
+
+                    // If the status is already verified, preserve it; otherwise, reset to pending
+                    if (existingAttendance.getStatus() == AttendanceStatus.PRESENT ||
+                            existingAttendance.getStatus() == AttendanceStatus.ABSENT) {
+                        log.info("Preserving existing verified status [{}] for student [{}]",
+                                existingAttendance.getStatus(), studentIndex);
+                    } else {
+                        existingAttendance.setStatus(AttendanceStatus.PENDING_VERIFICATION);
+                        existingAttendance.setProximity(null);
+                        log.info("Updating status to PENDING_VERIFICATION for student [{}]", studentIndex);
+                    }
+
+                    return studentAttendanceRepository.save(existingAttendance)
+                            .map(StudentAttendance::getId);
+                });
+    }
+
+    /**
+     * Creates and saves a new attendance record
+     */
+    private Mono<Integer> createAndSaveNewAttendanceRecord(String studentIndex, int sessionId) {
+        StudentAttendance newAttendance = createNewAttendanceRecord(studentIndex, sessionId);
+        return studentAttendanceRepository.save(newAttendance)
+                .map(StudentAttendance::getId);
+    }
+
+    /**
+     * Creates a new attendance record with default values
+     */
+    private StudentAttendance createNewAttendanceRecord(String studentIndex, int sessionId) {
+        return StudentAttendance.builder()
+                .studentIndex(studentIndex)
+                .professorClassSessionId(sessionId)
+                .status(AttendanceStatus.PENDING_VERIFICATION)
+                .arrivalTime(LocalDateTime.now())
                 .build();
+    }
 
-        return proximityVerificationRepository.save(summaryLog)
-                .then(Mono.just(response));
+    /**
+     * Handles proximity verification if proximity data is provided during attendance registration
+     * This automatically logs proximity verification and updates attendance status using the dedicated ProximityVerificationService
+     */
+    private Mono<Integer> handleProximityVerificationIfProvided(AttendanceRegistrationRequestDTO dto, Integer attendanceId) {
+        // If no proximity data provided, just return the attendance ID
+        if (dto.getProximityDetections() == null || dto.getProximityDetections().isEmpty()) {
+            log.debug("No proximity verification data provided for student [{}], skipping proximity logging", dto.getStudentIndex());
+            return Mono.just(attendanceId);
+        }
+
+        log.info("Processing proximity verification for student [{}] with {} detections during attendance registration",
+                dto.getStudentIndex(), dto.getProximityDetections().size());
+
+        // Create proximity verification request using the existing DTO structure
+        ProximityVerificationRequestDTO proximityRequest = new ProximityVerificationRequestDTO();
+        proximityRequest.setStudentIndex(dto.getStudentIndex());
+        proximityRequest.setAttendanceId(attendanceId);
+        proximityRequest.setProximityDetections(dto.getProximityDetections());
+        proximityRequest.setExpectedRoomId(dto.getExpectedRoomId());
+        proximityRequest.setVerificationDurationSeconds(dto.getVerificationDurationSeconds());
+
+        return proximityVerificationService.processProximityVerification(proximityRequest)
+                .doOnSuccess(response -> log.info("Proximity verification completed during attendance registration for student [{}]: {}",
+                        dto.getStudentIndex(), response.getVerificationStatus()))
+                .doOnError(error -> log.warn("Proximity verification failed during attendance registration for student [{}]: {}",
+                        dto.getStudentIndex(), error.getMessage()))
+                .then(Mono.just(attendanceId))
+                .onErrorReturn(attendanceId);
     }
 }

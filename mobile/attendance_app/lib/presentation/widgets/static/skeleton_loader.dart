@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:attendance_app/core/theme/color_palette.dart';
+import 'package:attendance_app/core/constants/app_constants.dart';
 
 class SkeletonLoader extends StatelessWidget {
   final double? width;
@@ -14,15 +15,18 @@ class SkeletonLoader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Shimmer.fromColors(
-      baseColor: Colors.grey[300]!,
-      highlightColor: Colors.grey[100]!,
+      baseColor: ColorPalette.skeletonBaseColor,
+      highlightColor: ColorPalette.skeletonHighlightColor,
       child: Container(
         width: width,
         height: height,
         decoration: BoxDecoration(
           color: ColorPalette.placeholderGrey,
           shape: shape,
-          borderRadius: shape == BoxShape.rectangle ? BorderRadius.circular(borderRadius.r) : null,
+          borderRadius:
+              shape == BoxShape.rectangle
+                  ? BorderRadius.circular(borderRadius == 8.0 ? AppConstants.borderRadius8 : borderRadius.r)
+                  : null,
         ),
       ),
     );

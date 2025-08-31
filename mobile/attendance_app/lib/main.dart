@@ -18,7 +18,6 @@ import 'package:logger/logger.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Load .env variables
   try {
     await dotenv.load(fileName: ".env");
   } catch (e) {
@@ -46,15 +45,12 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final Logger logger = Logger();
     return ScreenUtilInit(
-      // Set the design size of your UI prototype (in logical pixels)
-      // Common sizes: iPhone X/11 Pro: Size(375, 812), Google Pixel: Size(360, 690)
       designSize: const Size(375, 812),
       minTextAdapt: true,
       splitScreenMode: true,
       builder: (context, child) {
         return MaterialApp(
           title: 'Attendance Verifier',
-          // Add localization delegates and supported locales
           theme: ThemeData(
             colorScheme: ColorScheme.fromSeed(seedColor: ColorPalette.darkBlue),
             scaffoldBackgroundColor: Colors.white,
@@ -63,27 +59,22 @@ class MyApp extends StatelessWidget {
               builders: {TargetPlatform.android: PredictiveBackPageTransitionsBuilder()},
             ),
           ),
-
-          // Screens
           home: Consumer<UserProvider>(
             builder: (context, userProvider, child) {
               if (userProvider.isLoading) {
-                return Scaffold(body: Center(child: CircularProgressIndicator()));
+                return const Scaffold(body: Center(child: CircularProgressIndicator()));
               }
 
               final user = userProvider.currentUser;
 
               if (user == null) {
-                return SignInScreen();
+                return const SignInScreen();
               } else if (user is Student) {
-                return StudentDashboard();
+                return const StudentDashboard();
               } else if (user is Professor) {
-                logger.i("Professor dashboard is in development");
-                // TODO: Redirect to professor dashboard
-                return ProfessorDashboard();
+                return const ProfessorDashboard();
               } else {
-                // Fallback
-                return SignInScreen();
+                return const SignInScreen();
               }
             },
           ),

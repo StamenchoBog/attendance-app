@@ -12,7 +12,7 @@ import '../utils/storage_keys.dart';
 class DeviceIdentifierService {
   static final DeviceInfoPlugin _deviceInfoPlugin = DeviceInfoPlugin();
   static const _secureStorage = FlutterSecureStorage();
-  static final _uuidGenerator = Uuid();
+  static final _uuidGenerator = const Uuid();
   final Logger _logger = Logger();
   final ApiClient _apiClient = locator<ApiClient>();
 
@@ -131,16 +131,24 @@ class DeviceIdentifierService {
         '${ApiEndpoints.students}/$studentIndex/registered-device',
       );
 
-      // Check if response data is null
+      // Check if response data is null or the data object is empty/null
       if (response.data == null || response.data!['data'] == null) {
-        _logger.i('No registered device found for student $studentIndex.');
+        _logger.i('No registered device found for student $studentIndex (null response).');
         return {'id': null, 'name': null, 'os': null};
       }
 
       final Map<String, dynamic> data = response.data!['data'];
+
+      // Check if the data object is empty or doesn't contain device information
+      if (data.isEmpty || data['deviceId'] == null) {
+        _logger.i('No registered device found for student $studentIndex (empty data).');
+        return {'id': null, 'name': null, 'os': null};
+      }
+
       _logger.i('Successfully fetched registered device for student $studentIndex.');
+
       return {
-        'id': data['deviceId']?.toString(),
+        'id': data['deviceId']?.toString(), // Use deviceId as the unique identifier
         'name': data['deviceName']?.toString(),
         'os': data['deviceOs']?.toString(),
       };
@@ -182,15 +190,21 @@ class DeviceIdentifierService {
   }
 
   Future<void> registerFirstTimeDevice(String studentIndex) async {
+    _logger.i('Starting device registration for student: $studentIndex');
+
     final deviceId = await getPlatformSpecificIdentifier();
     final deviceName = await getDeviceName();
     final deviceOs = await getOsVersion();
 
+    _logger.i('Device info collected - ID: $deviceId, Name: $deviceName, OS: $deviceOs');
+
     if (deviceId == null) {
-      throw DeviceRegistrationException('DEVICE_ID_ERROR', 'Could not get device identifier.');
+      throw const DeviceRegistrationException('DEVICE_ID_ERROR', 'Could not get device identifier.');
     }
 
     final requestBody = {'deviceId': deviceId, 'deviceName': deviceName, 'deviceOs': deviceOs};
+
+    _logger.i('Sending device registration request with body: $requestBody');
 
     try {
       final response = await _apiClient.post<Map<String, dynamic>>(
@@ -198,16 +212,19 @@ class DeviceIdentifierService {
         data: requestBody,
       );
 
+      _logger.i('Device registration API response: ${response.data}');
+
       // Check if response contains error information
       if (response.data != null && response.data!['success'] == false) {
         final errorCode = response.data!['errorCode'] ?? 'UNKNOWN_ERROR';
         final errorMessage = response.data!['message'] ?? 'Registration failed';
+        _logger.e('Registration failed with error code: $errorCode, message: $errorMessage');
         throw DeviceRegistrationException(errorCode, errorMessage);
       }
 
       _logger.i('Successfully registered first-time device for student $studentIndex.');
     } on ApiException catch (e) {
-      _logger.e('API Error on first-time device registration: ${e.message}');
+      _logger.e('API Error on first-time device registration: ${e.message}, status: ${e.statusCode}');
 
       // Try to extract error code from API response
       String errorCode = 'REGISTRATION_FAILED';
@@ -222,9 +239,17 @@ class DeviceIdentifierService {
       }
 
       throw DeviceRegistrationException(errorCode, e.message);
-    } catch (e) {
+    } on DeviceRegistrationException {
+      // Re-throw DeviceRegistrationException without wrapping
+      rethrow;
+    } catch (e, stackTrace) {
       _logger.e('Unknown error on first-time device registration: $e');
-      throw DeviceRegistrationException('UNKNOWN_ERROR', 'An unexpected error occurred. Please try again.');
+      _logger.e('Stack trace: $stackTrace');
+      // Include the actual error details for better debugging
+      throw DeviceRegistrationException(
+        'UNKNOWN_ERROR',
+        'An unexpected error occurred: ${e.toString()}. Please try again.',
+      );
     }
   }
 }

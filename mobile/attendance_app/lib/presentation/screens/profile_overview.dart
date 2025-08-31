@@ -1,4 +1,4 @@
-import 'package:attendance_app/data/repositories/attendance_repository.dart';
+import 'package:attendance_app/data/repositories/student_repository.dart';
 import 'package:attendance_app/data/services/service_starter.dart';
 import 'package:attendance_app/presentation/widgets/specific/profile_header_widget.dart';
 import 'package:attendance_app/presentation/widgets/static/skeleton_loader.dart';
@@ -6,6 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:attendance_app/core/theme/color_palette.dart';
+import 'package:attendance_app/core/theme/app_text_styles.dart';
+import 'package:attendance_app/core/utils/ui_helpers.dart';
+import 'package:attendance_app/core/constants/app_constants.dart';
 import 'package:provider/provider.dart';
 import 'package:attendance_app/data/providers/user_provider.dart';
 import 'package:attendance_app/data/models/student.dart';
@@ -16,7 +19,6 @@ import 'package:attendance_app/presentation/screens/sign_in_screen.dart';
 // Widgets
 import 'package:attendance_app/presentation/widgets/static/bottom_nav_bar.dart';
 import 'package:attendance_app/presentation/widgets/static/helpers/navigation_helpers.dart';
-import 'package:logger/logger.dart';
 
 class ProfileOverviewScreen extends StatefulWidget {
   const ProfileOverviewScreen({super.key});
@@ -27,8 +29,7 @@ class ProfileOverviewScreen extends StatefulWidget {
 
 class _ProfileOverviewScreenState extends State<ProfileOverviewScreen> {
   int _selectedIndex = 3;
-  final Logger _logger = Logger();
-  final AttendanceRepository _attendanceRepository = locator<AttendanceRepository>();
+  final StudentRepository _studentRepository = locator<StudentRepository>();
   late Future<Map<String, dynamic>> _attendanceSummaryFuture;
 
   @override
@@ -40,9 +41,11 @@ class _ProfileOverviewScreenState extends State<ProfileOverviewScreen> {
   void _loadSummaryData() {
     final user = Provider.of<UserProvider>(context, listen: false).currentUser;
     if (user is Student) {
-      _attendanceSummaryFuture = _attendanceRepository.getAttendanceSummary(user.studentIndex);
+      _attendanceSummaryFuture = _studentRepository
+          .getAttendanceSummary(user.studentIndex, 'current') // Need to provide semester parameter
+          .then((value) => value ?? <String, dynamic>{});
     } else {
-      _attendanceSummaryFuture = Future.value({});
+      _attendanceSummaryFuture = Future.value(<String, dynamic>{});
     }
   }
 
@@ -61,19 +64,24 @@ class _ProfileOverviewScreenState extends State<ProfileOverviewScreen> {
       barrierDismissible: false,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppConstants.borderRadius16)),
           title: Text(
             "Log out",
             textAlign: TextAlign.center,
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17.sp, color: ColorPalette.textPrimary),
+            style: AppTextStyles.heading3.copyWith(fontWeight: FontWeight.bold, color: ColorPalette.textPrimary),
           ),
           content: Text(
             "Are you sure you want to log out? You'll need to login again to use the app.",
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 14.sp, color: ColorPalette.textSecondary, height: 1.4),
+            style: AppTextStyles.bodyMedium.copyWith(color: ColorPalette.secondaryTextColor, height: 1.4),
           ),
           actionsAlignment: MainAxisAlignment.center,
-          actionsPadding: EdgeInsets.only(left: 15.w, right: 15.w, bottom: 15.h, top: 5.h),
+          actionsPadding: EdgeInsets.only(
+            left: AppConstants.spacing16,
+            right: AppConstants.spacing16,
+            bottom: AppConstants.spacing16,
+            top: AppConstants.spacing8,
+          ),
           actions: <Widget>[
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -83,24 +91,24 @@ class _ProfileOverviewScreenState extends State<ProfileOverviewScreen> {
                     style: OutlinedButton.styleFrom(
                       foregroundColor: ColorPalette.darkBlue,
                       side: BorderSide(color: ColorPalette.darkBlue, width: 1.5.w),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
-                      padding: EdgeInsets.symmetric(vertical: 12.h),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppConstants.borderRadius12)),
+                      padding: EdgeInsets.symmetric(vertical: AppConstants.spacing12),
                     ),
-                    child: Text("Cancel", style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w600)),
+                    child: Text("Cancel", style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600)),
                     onPressed: () => Navigator.of(dialogContext).pop(),
                   ),
                 ),
-                SizedBox(width: 10.w),
+                UIHelpers.horizontalSpace(AppConstants.spacing12),
                 Expanded(
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: ColorPalette.darkBlue,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
-                      padding: EdgeInsets.symmetric(vertical: 12.h),
+                      foregroundColor: ColorPalette.pureWhite,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppConstants.borderRadius12)),
+                      padding: EdgeInsets.symmetric(vertical: AppConstants.spacing12),
                       elevation: 1,
                     ),
-                    child: Text("Log out", style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w600)),
+                    child: Text("Log out", style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600)),
                     onPressed: () {
                       Navigator.of(dialogContext).pop();
                       Provider.of<UserProvider>(context, listen: false).logout();
@@ -127,7 +135,7 @@ class _ProfileOverviewScreenState extends State<ProfileOverviewScreen> {
       appBar: AppBar(
         title: Text(
           "Profile",
-          style: TextStyle(color: ColorPalette.textPrimary, fontWeight: FontWeight.w600, fontSize: 18.sp),
+          style: AppTextStyles.heading3.copyWith(color: ColorPalette.textPrimary, fontWeight: FontWeight.w600),
         ),
         centerTitle: true,
         backgroundColor: Colors.white,
@@ -135,24 +143,24 @@ class _ProfileOverviewScreenState extends State<ProfileOverviewScreen> {
         automaticallyImplyLeading: false,
       ),
       body: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 20.w),
+        padding: EdgeInsets.symmetric(horizontal: AppConstants.spacing20),
         child: ListView(
           children: [
             const ProfileHeaderWidget(),
-            SizedBox(height: 25.h),
+            UIHelpers.verticalSpace(AppConstants.spacing24),
             if (user is Student) _buildAttendanceSummary(),
-            SizedBox(height: 25.h),
+            UIHelpers.verticalSpace(AppConstants.spacing24),
             _buildSettingsAndActions(),
-            SizedBox(height: 40.h), // Add some spacing before the button
+            UIHelpers.verticalSpace(AppConstants.spacing40),
             Padding(
-              padding: EdgeInsets.only(bottom: 20.h, top: 15.h),
+              padding: EdgeInsets.only(bottom: AppConstants.spacing20, top: AppConstants.spacing16),
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: ColorPalette.darkBlue,
-                  foregroundColor: Colors.white,
-                  minimumSize: Size(double.infinity, 50.h),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
-                  textStyle: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600),
+                  foregroundColor: ColorPalette.pureWhite,
+                  minimumSize: Size(double.infinity, AppConstants.buttonHeight),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppConstants.borderRadius12)),
+                  textStyle: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.w600),
                 ),
                 onPressed: _logOut,
                 child: const Text("Log out"),
@@ -171,14 +179,13 @@ class _ProfileOverviewScreenState extends State<ProfileOverviewScreen> {
       children: [
         Text(
           'ATTENDANCE SUMMARY',
-          style: TextStyle(
-            fontSize: 12.sp,
+          style: AppTextStyles.caption.copyWith(
             fontWeight: FontWeight.bold,
             color: ColorPalette.textSecondary,
             letterSpacing: 0.8,
           ),
         ),
-        SizedBox(height: 10.h),
+        UIHelpers.verticalSpace(AppConstants.spacing12),
         FutureBuilder<Map<String, dynamic>>(
           future: _attendanceSummaryFuture,
           builder: (context, snapshot) {
@@ -191,7 +198,7 @@ class _ProfileOverviewScreenState extends State<ProfileOverviewScreen> {
               return Row(
                 children: [
                   Expanded(child: _buildSummaryCard('Overall Attendance', '${summary['overallPercentage']}%')),
-                  SizedBox(width: 15.w),
+                  UIHelpers.horizontalSpace(AppConstants.spacing16),
                   Expanded(
                     child: _buildSummaryCard(
                       'Classes Attended',
@@ -210,17 +217,23 @@ class _ProfileOverviewScreenState extends State<ProfileOverviewScreen> {
 
   Widget _buildSummaryCard(String title, String value) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
-      decoration: BoxDecoration(color: ColorPalette.lightestBlue, borderRadius: BorderRadius.circular(12.r)),
+      padding: EdgeInsets.symmetric(horizontal: AppConstants.spacing16, vertical: AppConstants.spacing12),
+      decoration: BoxDecoration(
+        color: ColorPalette.lightestBlue,
+        borderRadius: BorderRadius.circular(AppConstants.borderRadius12),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
-            style: TextStyle(fontSize: 13.sp, color: ColorPalette.textSecondary, fontWeight: FontWeight.w500),
+            style: AppTextStyles.caption.copyWith(color: ColorPalette.textSecondary, fontWeight: FontWeight.w500),
           ),
-          SizedBox(height: 6.h),
-          Text(value, style: TextStyle(fontSize: 22.sp, color: ColorPalette.darkBlue, fontWeight: FontWeight.bold)),
+          UIHelpers.verticalSpace(AppConstants.spacing8),
+          Text(
+            value,
+            style: AppTextStyles.heading2.copyWith(color: ColorPalette.darkBlue, fontWeight: FontWeight.bold),
+          ),
         ],
       ),
     );
@@ -234,18 +247,18 @@ class _ProfileOverviewScreenState extends State<ProfileOverviewScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SkeletonLoader(width: 120, height: 14),
-              SizedBox(height: 6.h),
+              UIHelpers.verticalSpace(AppConstants.spacing8),
               const SkeletonLoader(width: 60, height: 24),
             ],
           ),
         ),
-        SizedBox(width: 15.w),
+        UIHelpers.horizontalSpace(AppConstants.spacing16),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SkeletonLoader(width: 120, height: 14),
-              SizedBox(height: 6.h),
+              UIHelpers.verticalSpace(AppConstants.spacing8),
               const SkeletonLoader(width: 80, height: 24),
             ],
           ),
@@ -262,14 +275,13 @@ class _ProfileOverviewScreenState extends State<ProfileOverviewScreen> {
       children: [
         Text(
           'SETTINGS & ACTIONS',
-          style: TextStyle(
-            fontSize: 12.sp,
+          style: AppTextStyles.caption.copyWith(
             fontWeight: FontWeight.bold,
             color: ColorPalette.textSecondary,
             letterSpacing: 0.8,
           ),
         ),
-        SizedBox(height: 10.h),
+        UIHelpers.verticalSpace(AppConstants.spacing12),
         _buildSettingsItem('Languages', onTap: () => navigateToSetting(context, 'languages')),
         if (user is Student) _buildSettingsItem('Devices', onTap: () => navigateToSetting(context, 'devices')),
         _buildSettingsItem(
@@ -287,15 +299,19 @@ class _ProfileOverviewScreenState extends State<ProfileOverviewScreen> {
       child: Column(
         children: [
           Padding(
-            padding: EdgeInsets.symmetric(vertical: 12.h),
+            padding: EdgeInsets.symmetric(vertical: AppConstants.spacing12),
             child: Row(
               children: [
-                Expanded(child: Text(title, style: TextStyle(fontSize: 15.sp, color: ColorPalette.textPrimary))),
-                Icon(CupertinoIcons.chevron_forward, size: 20.sp, color: ColorPalette.iconGrey.withOpacity(0.8)),
+                Expanded(child: Text(title, style: AppTextStyles.bodyMedium.copyWith(color: ColorPalette.textPrimary))),
+                Icon(
+                  CupertinoIcons.chevron_forward,
+                  size: AppConstants.iconSizeMedium,
+                  color: ColorPalette.iconGrey.withValues(alpha: 0.8),
+                ),
               ],
             ),
           ),
-          if (showDivider) Divider(height: 1.h, thickness: 1.h, color: Colors.grey[200]),
+          if (showDivider) UIHelpers.divider,
         ],
       ),
     );

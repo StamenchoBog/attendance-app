@@ -24,8 +24,8 @@ public class ReportController {
 
     @PostMapping("/submit")
     public Mono<APIResponse<UUID>> submitReport(@RequestBody ReportSubmissionDTO reportDTO) {
-        LOGGER.info("Received request to submit report of status [{}] from student with info [{}]",
-                reportDTO.getReportType(), reportDTO.getUserInfo());
+        LOGGER.info("Received request to submit report of status [{}] from student index [{}]",
+                reportDTO.getReportType(), reportDTO.getStudentIndex());
         return reportService.submitReport(reportDTO);
     }
 

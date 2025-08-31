@@ -1,27 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:permission_handler/permission_handler.dart';
-import '../../core/services/ble_service.dart';
+import '../../core/bluetooth/bluetooth_permission_manager.dart';
 import '../../core/theme/color_palette.dart';
+import '../../core/theme/app_text_styles.dart';
+import '../../core/utils/ui_helpers.dart';
+import '../../core/constants/app_constants.dart';
+import '../../data/models/beacon_models.dart';
 
 class BluetoothPermissionHandler extends StatefulWidget {
   final Widget child;
   final VoidCallback? onPermissionsGranted;
   final Function(String error)? onPermissionError;
 
-  const BluetoothPermissionHandler({
-    super.key,
-    required this.child,
-    this.onPermissionsGranted,
-    this.onPermissionError,
-  });
+  const BluetoothPermissionHandler({super.key, required this.child, this.onPermissionsGranted, this.onPermissionError});
 
   @override
   State<BluetoothPermissionHandler> createState() => _BluetoothPermissionHandlerState();
 }
 
 class _BluetoothPermissionHandlerState extends State<BluetoothPermissionHandler> {
-  final ProximityAttendanceService _proximityService = ProximityAttendanceService();
   bool _isCheckingPermissions = true;
   bool _permissionsGranted = false;
   PermissionRequestResult? _permissionResult;
@@ -38,7 +36,7 @@ class _BluetoothPermissionHandlerState extends State<BluetoothPermissionHandler>
     });
 
     try {
-      final result = await _proximityService.checkAndRequestPermissions();
+      final result = await BluetoothPermissionManager.checkAndRequestPermissions();
       setState(() {
         _permissionResult = result;
         _permissionsGranted = result.success;
@@ -46,6 +44,10 @@ class _BluetoothPermissionHandlerState extends State<BluetoothPermissionHandler>
       });
 
       if (result.success) {
+        // Pop this screen and notify parent
+        if (Navigator.of(context).canPop()) {
+          Navigator.of(context).pop();
+        }
         widget.onPermissionsGranted?.call();
       } else {
         widget.onPermissionError?.call(result.message);
@@ -91,78 +93,48 @@ class _BluetoothPermissionHandlerState extends State<BluetoothPermissionHandler>
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.bluetooth_disabled,
-                size: 80.w,
-                color: ColorPalette.errorColor,
-              ),
-              SizedBox(height: 24.h),
-              Text(
-                'Bluetooth Permissions Required',
-                style: TextStyle(
-                  fontSize: 24.sp,
-                  fontWeight: FontWeight.bold,
-                  color: ColorPalette.primaryTextColor,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              SizedBox(height: 16.h),
+              Icon(Icons.bluetooth_disabled, size: AppConstants.iconSizeXLarge * 2, color: ColorPalette.errorColor),
+              UIHelpers.verticalSpaceLarge,
+              Text('Bluetooth Permissions Required', style: AppTextStyles.heading1, textAlign: TextAlign.center),
+              UIHelpers.verticalSpaceMedium,
               Text(
                 result.message,
-                style: TextStyle(
-                  fontSize: 16.sp,
-                  color: ColorPalette.secondaryTextColor,
-                  height: 1.5,
-                ),
+                style: AppTextStyles.bodyLarge.copyWith(color: ColorPalette.secondaryTextColor, height: 1.5),
                 textAlign: TextAlign.center,
               ),
-              SizedBox(height: 24.h),
+              UIHelpers.verticalSpaceLarge,
 
               // Show specific permissions that were denied
               if (result.deniedPermissions.isNotEmpty) ...[
                 Container(
                   padding: EdgeInsets.all(16.w),
                   decoration: BoxDecoration(
-                    color: ColorPalette.errorColor.withOpacity(0.1),
+                    color: ColorPalette.errorColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12.r),
-                    border: Border.all(
-                      color: ColorPalette.errorColor.withOpacity(0.3),
-                    ),
+                    border: Border.all(color: ColorPalette.errorColor.withValues(alpha: 0.3)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Denied Permissions:',
-                        style: TextStyle(
-                          fontSize: 14.sp,
-                          fontWeight: FontWeight.w600,
-                          color: ColorPalette.errorColor,
-                        ),
-                      ),
-                      SizedBox(height: 8.h),
-                      ...result.deniedPermissions.map((permission) => Padding(
-                        padding: EdgeInsets.only(bottom: 4.h),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.close,
-                              size: 16.w,
-                              color: ColorPalette.errorColor,
-                            ),
-                            SizedBox(width: 8.w),
-                            Expanded(
-                              child: Text(
-                                _getPermissionDisplayName(permission),
-                                style: TextStyle(
-                                  fontSize: 12.sp,
-                                  color: ColorPalette.errorColor,
+                      Text('Denied Permissions:', style: AppTextStyles.label.copyWith(color: ColorPalette.errorColor)),
+                      UIHelpers.verticalSpaceSmall,
+                      ...result.deniedPermissions.map(
+                        (permission) => Padding(
+                          padding: EdgeInsets.only(bottom: AppConstants.spacing4),
+                          child: Row(
+                            children: [
+                              Icon(Icons.close, size: AppConstants.iconSizeSmall, color: ColorPalette.errorColor),
+                              UIHelpers.horizontalSpaceSmall,
+                              Expanded(
+                                child: Text(
+                                  _getPermissionDisplayName(permission),
+                                  style: AppTextStyles.caption.copyWith(color: ColorPalette.errorColor),
                                 ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      )),
+                      ),
                     ],
                   ),
                 ),
@@ -179,11 +151,9 @@ class _BluetoothPermissionHandlerState extends State<BluetoothPermissionHandler>
                     label: const Text('Open Settings'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: ColorPalette.primaryColor,
-                      foregroundColor: Colors.white,
+                      foregroundColor: ColorPalette.pureWhite,
                       padding: EdgeInsets.symmetric(vertical: 16.h),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12.r),
-                      ),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
                     ),
                   ),
                 ),
@@ -192,11 +162,11 @@ class _BluetoothPermissionHandlerState extends State<BluetoothPermissionHandler>
                   width: double.infinity,
                   child: TextButton(
                     onPressed: _checkPermissions,
-                    child: const Text('Re-check Permissions'),
                     style: TextButton.styleFrom(
                       foregroundColor: ColorPalette.primaryColor,
                       padding: EdgeInsets.symmetric(vertical: 16.h),
                     ),
+                    child: const Text('Re-check Permissions'),
                   ),
                 ),
               ] else if (result.needsBluetoothEnable) ...[
@@ -208,11 +178,9 @@ class _BluetoothPermissionHandlerState extends State<BluetoothPermissionHandler>
                     label: const Text('Turn On Bluetooth'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: ColorPalette.primaryColor,
-                      foregroundColor: Colors.white,
+                      foregroundColor: ColorPalette.pureWhite,
                       padding: EdgeInsets.symmetric(vertical: 16.h),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12.r),
-                      ),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
                     ),
                   ),
                 ),
@@ -221,11 +189,11 @@ class _BluetoothPermissionHandlerState extends State<BluetoothPermissionHandler>
                   width: double.infinity,
                   child: TextButton(
                     onPressed: _checkPermissions,
-                    child: const Text('Check Again'),
                     style: TextButton.styleFrom(
                       foregroundColor: ColorPalette.primaryColor,
                       padding: EdgeInsets.symmetric(vertical: 16.h),
                     ),
+                    child: const Text('Check Again'),
                   ),
                 ),
               ] else if (result.canRetry) ...[
@@ -237,11 +205,9 @@ class _BluetoothPermissionHandlerState extends State<BluetoothPermissionHandler>
                     label: const Text('Request Permissions'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: ColorPalette.primaryColor,
-                      foregroundColor: Colors.white,
+                      foregroundColor: ColorPalette.pureWhite,
                       padding: EdgeInsets.symmetric(vertical: 16.h),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12.r),
-                      ),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
                     ),
                   ),
                 ),
@@ -253,33 +219,21 @@ class _BluetoothPermissionHandlerState extends State<BluetoothPermissionHandler>
               Container(
                 padding: EdgeInsets.all(16.w),
                 decoration: BoxDecoration(
-                  color: ColorPalette.primaryColor.withOpacity(0.1),
+                  color: ColorPalette.primaryColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12.r),
                 ),
                 child: Column(
                   children: [
-                    Icon(
-                      Icons.info_outline,
-                      color: ColorPalette.primaryColor,
-                      size: 24.w,
-                    ),
+                    Icon(Icons.info_outline, color: ColorPalette.primaryColor, size: 24.w),
                     SizedBox(height: 8.h),
                     Text(
                       'Why are these permissions needed?',
-                      style: TextStyle(
-                        fontSize: 14.sp,
-                        fontWeight: FontWeight.w600,
-                        color: ColorPalette.primaryColor,
-                      ),
+                      style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w600, color: ColorPalette.primaryColor),
                     ),
                     SizedBox(height: 8.h),
                     Text(
                       'The app needs Bluetooth and Location permissions to detect classroom beacons for attendance verification. This ensures you are physically present in the classroom.',
-                      style: TextStyle(
-                        fontSize: 12.sp,
-                        color: ColorPalette.secondaryTextColor,
-                        height: 1.4,
-                      ),
+                      style: TextStyle(fontSize: 12.sp, color: ColorPalette.secondaryTextColor, height: 1.4),
                       textAlign: TextAlign.center,
                     ),
                   ],
@@ -301,26 +255,17 @@ class _BluetoothPermissionHandlerState extends State<BluetoothPermissionHandler>
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(ColorPalette.primaryColor),
-              ),
+              const CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(ColorPalette.primaryColor)),
               SizedBox(height: 24.h),
               Text(
                 'Checking Bluetooth Permissions',
-                style: TextStyle(
-                  fontSize: 18.sp,
-                  fontWeight: FontWeight.w600,
-                  color: ColorPalette.primaryTextColor,
-                ),
+                style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w600, color: ColorPalette.primaryTextColor),
                 textAlign: TextAlign.center,
               ),
               SizedBox(height: 8.h),
               Text(
                 'Please wait while we verify your device permissions...',
-                style: TextStyle(
-                  fontSize: 14.sp,
-                  color: ColorPalette.secondaryTextColor,
-                ),
+                style: TextStyle(fontSize: 14.sp, color: ColorPalette.secondaryTextColor),
                 textAlign: TextAlign.center,
               ),
             ],

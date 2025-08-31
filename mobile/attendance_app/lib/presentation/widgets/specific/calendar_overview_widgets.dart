@@ -150,15 +150,64 @@ Widget _buildEventItem(
   final DateTime startTime = event['dateTime'];
   final Duration duration = event['duration'];
   final DateTime endTime = startTime.add(duration);
+  final String? attendanceStatus = event['attendanceStatus'];
 
   bool isStudent = userRole == ApiRoles.studentRole;
   final bool hasPassed = endTime.isBefore(DateTime.now());
   final bool isReadOnly = isStudent && hasPassed;
 
-  final Color eventColor = isReadOnly ? Colors.grey : ColorPalette.darkBlue;
+  // Enhanced color logic based on attendance status
+  Color _getEventColor() {
+    if (isReadOnly && attendanceStatus == null) return Colors.grey;
+
+    if (attendanceStatus != null) {
+      switch (attendanceStatus.toLowerCase()) {
+        case 'verified':
+        case 'confirmed':
+        case 'present':
+          return ColorPalette.successColor;
+        case 'registered':
+        case 'pending':
+          return ColorPalette.warningColor;
+        case 'absent':
+        case 'missed':
+          return ColorPalette.errorColor;
+        default:
+          break;
+      }
+    }
+
+    return isReadOnly ? Colors.grey : ColorPalette.darkBlue;
+  }
+
+  Color _getEventBackgroundColor() {
+    if (isReadOnly && attendanceStatus == null) return ColorPalette.cardBackground;
+
+    if (attendanceStatus != null) {
+      switch (attendanceStatus.toLowerCase()) {
+        case 'verified':
+        case 'confirmed':
+        case 'present':
+          return ColorPalette.successColor.withValues(alpha: 0.1);
+        case 'registered':
+        case 'pending':
+          return ColorPalette.warningColor.withValues(alpha: 0.1);
+        case 'absent':
+        case 'missed':
+          return ColorPalette.errorColor.withValues(alpha: 0.1);
+        default:
+          break;
+      }
+    }
+
+    return isReadOnly ? ColorPalette.cardBackground : ColorPalette.lightestBlue.withValues(alpha: 0.9);
+  }
+
+  final Color eventColor = _getEventColor();
+  final Color backgroundColor = _getEventBackgroundColor();
 
   return Material(
-    color: isReadOnly ? ColorPalette.cardBackground : ColorPalette.lightestBlue.withValues(alpha: 0.9),
+    color: backgroundColor,
     borderRadius: BorderRadius.circular(4.r),
     child: InkWell(
       onTap: isReadOnly ? null : () => onEventTap(event),
@@ -175,7 +224,7 @@ Widget _buildEventItem(
           children: [
             Row(
               children: [
-                Icon(CupertinoIcons.bell_fill, size: 10.sp, color: eventColor),
+                Icon(_getAttendanceIcon(attendanceStatus), size: 10.sp, color: eventColor),
                 SizedBox(width: 3.w),
                 Expanded(
                   child: Text(
@@ -197,4 +246,23 @@ Widget _buildEventItem(
       ),
     ),
   );
+}
+
+IconData _getAttendanceIcon(String? attendanceStatus) {
+  if (attendanceStatus == null) return CupertinoIcons.bell_fill;
+
+  switch (attendanceStatus.toLowerCase()) {
+    case 'verified':
+    case 'confirmed':
+    case 'present':
+      return CupertinoIcons.checkmark_circle_fill;
+    case 'registered':
+    case 'pending':
+      return CupertinoIcons.clock_fill;
+    case 'absent':
+    case 'missed':
+      return CupertinoIcons.xmark_circle_fill;
+    default:
+      return CupertinoIcons.bell_fill;
+  }
 }

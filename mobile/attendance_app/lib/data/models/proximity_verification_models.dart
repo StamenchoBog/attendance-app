@@ -1,3 +1,5 @@
+import 'beacon_models.dart';
+
 class ProximityDetectionRequest {
   final String studentIndex;
   final String sessionToken;
@@ -179,4 +181,60 @@ class ProximityVerificationLog {
       beaconType: json['beaconType'],
     );
   }
+}
+
+/// Data Transfer Object for proximity detection data, matching the server-side DTO
+class ProximityDetectionDTO {
+  final String studentIndex;
+  final String sessionToken;
+  final String beaconDeviceId;
+  final String detectedRoomId;
+  final int rssi;
+  final String proximityLevel; // NEAR, MEDIUM, FAR, OUT_OF_RANGE
+  final double estimatedDistance;
+  final DateTime detectionTimestamp;
+  final String beaconType; // DEDICATED_BEACON, PROFESSOR_PHONE
+
+  ProximityDetectionDTO({
+    required this.studentIndex,
+    required this.sessionToken,
+    required this.beaconDeviceId,
+    required this.detectedRoomId,
+    required this.rssi,
+    required this.proximityLevel,
+    required this.estimatedDistance,
+    required this.detectionTimestamp,
+    required this.beaconType,
+  });
+
+  /// Convert BeaconDetection from the BLE service to ProximityDetectionDTO
+  factory ProximityDetectionDTO.fromBeaconDetection({
+    required BeaconDetection detection,
+    required String studentIndex,
+    required String sessionToken,
+  }) {
+    return ProximityDetectionDTO(
+      studentIndex: studentIndex,
+      sessionToken: sessionToken,
+      beaconDeviceId: detection.deviceId,
+      detectedRoomId: detection.roomId,
+      rssi: detection.rssi,
+      proximityLevel: detection.proximity.name.toUpperCase(),
+      estimatedDistance: detection.estimatedDistance,
+      detectionTimestamp: detection.timestamp,
+      beaconType: 'DEDICATED_BEACON', // Default type, can be overridden if needed
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'studentIndex': studentIndex,
+    'sessionToken': sessionToken,
+    'beaconDeviceId': beaconDeviceId,
+    'detectedRoomId': detectedRoomId,
+    'rssi': rssi,
+    'proximityLevel': proximityLevel,
+    'estimatedDistance': estimatedDistance,
+    'detectionTimestamp': detectionTimestamp.toIso8601String(),
+    'beaconType': beaconType,
+  };
 }

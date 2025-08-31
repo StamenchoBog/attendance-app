@@ -1,5 +1,8 @@
 package mk.ukim.finki.attendanceappserver.domain.enums;
 
+import lombok.Getter;
+
+@Getter
 public enum ReportStatus {
     NEW("NEW"),
     IN_PROGRESS("IN_PROGRESS"),
@@ -10,10 +13,6 @@ public enum ReportStatus {
 
     ReportStatus(String value) {
         this.value = value;
-    }
-
-    public String getValue() {
-        return value;
     }
 
     @Override

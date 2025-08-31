@@ -57,7 +57,8 @@ public interface ClassSessionRepository extends R2dbcRepository<mk.ukim.finki.at
             scs.room_name AS class_room_name,
             scs.start_time AS class_start_time,
             scs.end_time AS class_end_time,
-            CASE WHEN :time::time BETWEEN scs.start_time AND scs.end_time THEN true ELSE false END AS has_class_started
+            CASE WHEN :time::time BETWEEN scs.start_time AND scs.end_time THEN true ELSE false END AS has_class_started,
+            COALESCE(sa.status, 'not_attended') AS attendance_status
         FROM student_subject_enrollment sse
         JOIN student s ON sse.student_student_index = s.student_index
         JOIN course c ON sse.course_id = c.id
@@ -66,6 +67,8 @@ public interface ClassSessionRepository extends R2dbcRepository<mk.ukim.finki.at
         JOIN professor_class_session pcs ON scs.id = pcs.scheduled_class_session_id
         JOIN professor p ON pcs.professor_id = p.id
         JOIN student_semester_enrollment sse2 ON s.student_index = sse2.student_student_index
+        LEFT JOIN student_attendance sa ON sa.student_student_index = s.student_index
+            AND sa.professor_class_session_id = pcs.id
         WHERE s.student_index = :studentIndex
           AND pcs.date = :date
           AND (:time::time BETWEEN scs.start_time AND scs.end_time OR scs.start_time > :time::time)

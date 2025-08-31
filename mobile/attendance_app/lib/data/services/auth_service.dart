@@ -1,13 +1,37 @@
 import 'dart:convert';
 import 'package:attendance_app/core/utils/storage_keys.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:attendance_app/core/utils/error_handler.dart';
 import '../models/user.dart';
+
+// Custom exception for authentication errors that works with ErrorHandler
+class AuthenticationException implements Exception {
+  final String message;
+  final int? statusCode;
+
+  AuthenticationException(this.message, {this.statusCode});
+
+  @override
+  String toString() => message;
+}
 
 class AuthService {
   final _secureStorage = const FlutterSecureStorage();
   final String _baseUrl = dotenv.env['API_URL'] ?? '';
+  late final Dio _dio;
+
+  AuthService() {
+    _dio = Dio(
+      BaseOptions(
+        baseUrl: _baseUrl,
+        headers: {'Content-Type': 'application/json'},
+        connectTimeout: const Duration(seconds: 30),
+        receiveTimeout: const Duration(seconds: 30),
+      ),
+    );
+  }
 
   // Get stored JWT token
   Future<String?> getToken() async {
@@ -53,38 +77,46 @@ class AuthService {
 
   // Validates CAS service ticket with your API
   Future<User> validateTicket(String ticket) async {
-    final response = await http.post(
-      Uri.parse('$_baseUrl/auth/validate-ticket'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'ticket': ticket}),
-    );
+    return await ErrorHandler.handleAsyncError<User>(
+          () async {
+            final response = await _dio.post('/auth/validate-ticket', data: {'ticket': ticket});
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
+            final data = response.data;
 
-      // Store tokens
-      await storeToken(data['token']);
-      if (data['refreshToken'] != null) {
-        await storeRefreshToken(data['refreshToken']);
-      }
+            // Store tokens
+            await storeToken(data['token']);
+            if (data['refreshToken'] != null) {
+              await storeRefreshToken(data['refreshToken']);
+            }
 
-      // Return student information
-      return User.fromJson(data['student']);
-    } else {
-      throw Exception('Failed to validate ticket: ${response.statusCode}');
-    }
+            // Return student information
+            return User.fromJson(data['student']);
+          },
+          'validateTicket',
+          showDialog: false,
+          showToast: false,
+        ) ??
+        (throw AuthenticationException('Authentication failed'));
   }
 
   // Create an HTTP client with auth headers
-  Future<http.Client> getAuthClient() async {
+  Future<Dio> getAuthClient() async {
     final token = await getToken();
-    final client = http.Client();
+
+    final dio = Dio(
+      BaseOptions(
+        baseUrl: _baseUrl,
+        headers: {'Content-Type': 'application/json'},
+        connectTimeout: const Duration(seconds: 30),
+        receiveTimeout: const Duration(seconds: 30),
+      ),
+    );
 
     if (token != null) {
-      return _AuthorizedClient(client, token);
+      dio.options.headers['Authorization'] = 'Bearer $token';
     }
 
-    return client;
+    return dio;
   }
 
   // Logout
@@ -99,14 +131,10 @@ class AuthService {
     if (refreshToken == null) return false;
 
     try {
-      final response = await http.post(
-        Uri.parse('$_baseUrl/auth/refresh'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'refreshToken': refreshToken}),
-      );
+      final response = await _dio.post('/auth/refresh', data: jsonEncode({'refreshToken': refreshToken}));
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+        final data = response.data;
         await storeToken(data['token']);
 
         // Store new refresh token if provided
@@ -128,13 +156,13 @@ class AuthService {
   // Refresh JWT token using refresh token
   Future<String?> refreshTokenWithRefreshToken(String refreshToken) async {
     try {
-      final response = await http.post(
-        Uri.parse('$_baseUrl/auth/refresh'),
-        headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $refreshToken'},
+      final response = await _dio.post(
+        '/auth/refresh',
+        options: Options(headers: {'Authorization': 'Bearer $refreshToken'}),
       );
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+        final data = response.data;
         final newAccessToken = data['accessToken'];
         final newRefreshToken = data['refreshToken'];
 
@@ -157,19 +185,5 @@ class AuthService {
     await _secureStorage.delete(key: StorageKeys.jwtToken);
     await _secureStorage.delete(key: StorageKeys.refreshToken);
     await _secureStorage.delete(key: StorageKeys.currentUser);
-  }
-}
-
-// Custom HTTP client that adds authorization header
-class _AuthorizedClient extends http.BaseClient {
-  final http.Client _inner;
-  final String _token;
-
-  _AuthorizedClient(this._inner, this._token);
-
-  @override
-  Future<http.StreamedResponse> send(http.BaseRequest request) {
-    request.headers['Authorization'] = 'Bearer $_token';
-    return _inner.send(request);
   }
 }

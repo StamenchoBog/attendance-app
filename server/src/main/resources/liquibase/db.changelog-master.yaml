@@ -48,3 +48,23 @@ databaseChangeLog:
       file: sql/011_class_scheduling_and_attendance.sql
       relativeToChangelogFile: true
       context: "dev,test"
+
+  # Bug Fixes and Schema Corrections
+  - include:
+      file: sql/012_add_steps_to_reproduce_column.sql
+      relativeToChangelogFile: true
+
+  # Refactor reports table to use foreign keys instead of plain text
+  - include:
+      file: sql/013_refactor_reports_foreign_keys.sql
+      relativeToChangelogFile: true
+
+  # Fix device_id type mismatch in reports table
+  - include:
+      file: sql/014_fix_report_device_id_type.sql
+      relativeToChangelogFile: true
+
+  # Update proximity verification log table with missing columns and constraints
+  - include:
+      file: sql/015_proximity_verification_log_updates.sql
+      relativeToChangelogFile: true

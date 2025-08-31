@@ -33,4 +33,7 @@ public class ClassSessionOverview {
     private LocalTime classStartTime;
     private LocalTime classEndTime;
     private Boolean hasClassStarted;
+
+    // Attendance verification status for color coding
+    private String attendanceStatus; // e.g., "verified", "registered", "pending", "absent", "not_attended"
 }

@@ -1,61 +1,106 @@
+import 'package:attendance_app/core/utils/error_handler.dart';
+
+/// Helper class for centralized error message management
 class ErrorMessageHelper {
-  static String getDeviceRegistrationErrorMessage(String errorCode, String? fallbackMessage) {
-    switch (errorCode) {
-      case 'DEVICE_ALREADY_REGISTERED':
-        return 'You already have a registered device. To change devices, please use the device change request feature in your profile settings.';
-      case 'DEVICE_NOT_REGISTERED':
-        return 'This device is not registered for attendance. Please register your device first or use your registered device.';
-      case 'INVALID_INPUT':
-        return 'Invalid device information. Please try again.';
-      case 'REGISTRATION_FAILED':
-        return 'Failed to register your device. Please check your internet connection and try again.';
-      case 'NETWORK_ERROR':
-        return 'Unable to connect to the server. Please check your internet connection and try again.';
-      case 'SERVER_ERROR':
-        return 'Server is temporarily unavailable. Please try again in a few moments.';
-      case 'DEVICE_ID_ERROR':
-        return 'Unable to identify your device. Please restart the app and try again.';
-      case 'STUDENT_NOT_FOUND':
-        return 'Student information not found. Please contact support.';
-      case 'TOKEN_EXPIRED':
-        return 'Your session has expired. Please log in again.';
-      case 'INVALID_TOKEN':
-        return 'Invalid attendance code. Please scan a valid QR code from your professor.';
-      case 'ATTENDANCE_ALREADY_REGISTERED':
-        return 'You have already marked attendance for this session.';
-      case 'SESSION_EXPIRED':
-        return 'The attendance session has expired. Please ask your professor to generate a new QR code.';
+  // Repository-specific error messages
+  static const String attendanceRegistrationFailed = 'Failed to register attendance. Please try again.';
+  static const String attendanceConfirmationFailed = 'Failed to confirm attendance. Please try again.';
+  static const String studentDataLoadFailed = 'Failed to load student data. Please try again.';
+  static const String professorDataLoadFailed = 'Failed to load professor data. Please try again.';
+  static const String classSessionLoadFailed = 'Failed to load class session data. Please try again.';
+  static const String proximityVerificationFailed = 'Failed to verify proximity. Please try again.';
+  static const String reportSubmissionFailed = 'Failed to submit report. Please try again.';
+  static const String roomDataLoadFailed = 'Failed to load room data. Please try again.';
+  static const String subjectDataLoadFailed = 'Failed to load subject data. Please try again.';
+
+  /// Gets a user-friendly error message for the given error
+  static String getErrorMessage(dynamic error) {
+    return ErrorHandler.getErrorMessage(error);
+  }
+
+  /// Gets a specific error message for repository operations
+  static String getRepositoryErrorMessage(String repositoryName, String operation, [dynamic error]) {
+    if (error != null) {
+      final specificMessage = ErrorHandler.getErrorMessage(error);
+      if (specificMessage != ErrorHandler.unknownError) {
+        return specificMessage;
+      }
+    }
+
+    // Fallback to operation-specific messages
+    final key = '${repositoryName.toLowerCase()}_${operation.toLowerCase()}';
+    switch (key) {
+      case 'attendance_register':
+        return attendanceRegistrationFailed;
+      case 'attendance_confirm':
+        return attendanceConfirmationFailed;
+      case 'student_load':
+      case 'student_get':
+        return studentDataLoadFailed;
+      case 'professor_load':
+      case 'professor_get':
+        return professorDataLoadFailed;
+      case 'classsession_load':
+      case 'classsession_get':
+        return classSessionLoadFailed;
+      case 'proximityverification_verify':
+        return proximityVerificationFailed;
+      case 'report_submit':
+        return reportSubmissionFailed;
+      case 'room_load':
+      case 'room_get':
+        return roomDataLoadFailed;
+      case 'subject_load':
+      case 'subject_get':
+        return subjectDataLoadFailed;
       default:
-        return fallbackMessage ?? 'An unexpected error occurred. Please try again.';
+        return ErrorHandler.unknownError;
     }
   }
 
-  static String getAttendanceErrorMessage(String errorCode, String? fallbackMessage) {
-    switch (errorCode) {
-      case 'DEVICE_NOT_REGISTERED':
-        return 'Cannot mark attendance: Your device is not registered. Please register your device in settings.';
-      case 'INVALID_TOKEN':
-        return 'Invalid QR code. Please scan the QR code displayed by your professor.';
-      case 'TOKEN_EXPIRED':
-        return 'This attendance session has expired. Please ask your professor for a new QR code.';
-      case 'ATTENDANCE_ALREADY_REGISTERED':
-        return 'You have already marked attendance for this class session.';
-      case 'STUDENT_NOT_VALID':
-        return 'Student verification failed. Please contact support.';
-      case 'PROXIMITY_CHECK_FAILED':
-        return 'Unable to verify your location. Please ensure Bluetooth is enabled and you are in the classroom.';
-      default:
-        return fallbackMessage ?? 'Failed to mark attendance. Please try again.';
+  /// Formats error message with additional context
+  static String formatErrorWithContext(String operation, dynamic error) {
+    final baseMessage = ErrorHandler.getErrorMessage(error);
+    return 'Error during $operation: $baseMessage';
+  }
+
+  /// Gets attendance error message with specific context
+  static String getAttendanceErrorMessage(dynamic error, [String? context]) {
+    final baseMessage = ErrorHandler.getErrorMessage(error);
+    if (context != null) {
+      return '$context: $baseMessage';
     }
+    return baseMessage.contains('attendance') ? baseMessage : 'Attendance operation failed. Please try again.';
   }
 
-  static bool isRetryableError(String errorCode) {
-    const retryableErrors = ['NETWORK_ERROR', 'SERVER_ERROR', 'REGISTRATION_FAILED', 'DEVICE_ID_ERROR'];
-    return retryableErrors.contains(errorCode);
+  /// Gets device registration error message with specific context
+  static String getDeviceRegistrationErrorMessage(dynamic error, [String? context]) {
+    final baseMessage = ErrorHandler.getErrorMessage(error);
+    if (context != null) {
+      return '$context: $baseMessage';
+    }
+    return baseMessage.contains('device') ? baseMessage : 'Device registration failed. Please try again.';
   }
 
-  static bool requiresDeviceRegistration(String errorCode) {
-    const deviceErrors = ['DEVICE_NOT_REGISTERED', 'DEVICE_ALREADY_REGISTERED'];
-    return deviceErrors.contains(errorCode);
+  /// Checks if an error is retryable
+  static bool isRetryableError(dynamic error) {
+    if (error == null) return false;
+
+    final message = ErrorHandler.getErrorMessage(error).toLowerCase();
+
+    // Network-related errors are typically retryable
+    if (message.contains('network') ||
+        message.contains('timeout') ||
+        message.contains('connection') ||
+        message.contains('server error')) {
+      return true;
+    }
+
+    // Authentication and validation errors are typically not retryable
+    if (message.contains('authentication') || message.contains('invalid data') || message.contains('access denied')) {
+      return false;
+    }
+
+    return true; // Default to retryable for unknown errors
   }
 }

@@ -71,14 +71,12 @@ void handleBottomNavigation(BuildContext context, int index) {
       } else if (userProvider.currentUser?.role == ApiRoles.professorRole) {
         fastPush(context, const ProfessorCalendarOverview());
       }
-      break;
     case 2:
       if (userProvider.currentUser?.role == ApiRoles.studentRole) {
         fastPush(context, const VerifyAttendanceScreen());
       } else if (userProvider.currentUser?.role == ApiRoles.professorRole) {
         fastPush(context, const QuickAttendanceScreen());
       }
-      break;
     case 3:
       fastPush(context, const ProfileOverviewScreen());
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:attendance_app/presentation/widgets/static/skeleton_loader.dart';
+import 'package:attendance_app/core/utils/ui_helpers.dart';
+import 'package:attendance_app/core/constants/app_constants.dart';
 
 class DashboardSkeleton extends StatelessWidget {
   const DashboardSkeleton({super.key});
@@ -11,17 +12,17 @@ class DashboardSkeleton extends StatelessWidget {
       itemCount: 5, // Display 5 shimmering items
       itemBuilder: (context, index) {
         return Padding(
-          padding: EdgeInsets.only(bottom: 10.h),
+          padding: EdgeInsets.only(bottom: AppConstants.spacing12),
           child: Row(
             children: [
-              const SkeletonLoader(width: 45, height: 45),
-              SizedBox(width: 12.w),
+              SkeletonLoader(width: AppConstants.iconSizeXLarge, height: AppConstants.iconSizeXLarge),
+              UIHelpers.horizontalSpace(AppConstants.spacing12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SkeletonLoader(width: 150, height: 16),
-                    SizedBox(height: 4.h),
+                    UIHelpers.verticalSpace(AppConstants.spacing4),
                     const SkeletonLoader(width: 100, height: 12),
                   ],
                 ),

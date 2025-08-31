@@ -1,15 +1,15 @@
-import 'dart:convert';
 import 'package:attendance_app/data/providers/date_provider.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
 import 'package:attendance_app/data/repositories/attendance_repository.dart';
 import 'package:attendance_app/core/services/standardized_qr_service.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/color_palette.dart';
+import '../../core/theme/app_text_styles.dart';
+import '../../core/utils/ui_helpers.dart';
+import '../../core/constants/app_constants.dart';
 import '../../data/models/professor.dart';
 import '../../data/providers/user_provider.dart';
 import '../../data/repositories/class_session_repository.dart';
@@ -83,10 +83,17 @@ class _QuickAttendanceScreenState extends State<QuickAttendanceScreen> with Tick
       final user = Provider.of<UserProvider>(context, listen: false).currentUser as Professor?;
       if (user == null) throw Exception("Professor not logged in");
 
-      final classes = await _classSessionRepository.getProfessorClassSessions(user.id, _dateProvider!.selectedDate);
+      // Use date-based endpoint instead of current-week
+      final selectedDate = _dateProvider?.selectedDate ?? DateTime.now();
+      final classes = await _classSessionRepository.getProfessorClassSessionsByDate(
+        professorId: user.id,
+        date: selectedDate,
+        context: context,
+      );
+
       if (!mounted) return;
       setState(() {
-        _classes = classes;
+        _classes = classes ?? [];
         _isLoading = false;
       });
     } catch (e) {
@@ -141,43 +148,42 @@ class _QuickAttendanceScreenState extends State<QuickAttendanceScreen> with Tick
           children: [
             // Fixed header section
             Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20.w),
+              padding: EdgeInsets.symmetric(horizontal: AppConstants.spacing20),
               child: Column(
                 children: [
-                  SizedBox(height: 15.h),
-                  SizedBox(height: 32.h),
+                  UIHelpers.verticalSpace(AppConstants.spacing16),
+                  UIHelpers.verticalSpace(AppConstants.spacing32),
 
                   // Header section with icon and title
                   Row(
                     children: [
                       Container(
-                        padding: EdgeInsets.all(12.w),
+                        padding: EdgeInsets.all(AppConstants.spacing12),
                         decoration: BoxDecoration(
                           color: ColorPalette.darkBlue.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(16.r),
+                          borderRadius: BorderRadius.circular(AppConstants.borderRadius16),
                         ),
-                        child: Icon(Icons.qr_code_2_rounded, color: ColorPalette.darkBlue, size: 28.sp),
+                        child: Icon(
+                          Icons.qr_code_2_rounded,
+                          color: ColorPalette.darkBlue,
+                          size: AppConstants.iconSizeLarge,
+                        ),
                       ),
-                      SizedBox(width: 16.w),
+                      UIHelpers.horizontalSpace(AppConstants.spacing16),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               'Quick Attendance',
-                              style: TextStyle(
-                                fontSize: 26.sp,
-                                fontWeight: FontWeight.w700,
-                                color: ColorPalette.textPrimary,
-                              ),
+                              style: AppTextStyles.heading1.copyWith(color: ColorPalette.textPrimary),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
-                            SizedBox(height: 4.h),
+                            UIHelpers.verticalSpaceSmall,
                             Text(
                               'Generate instant attendance codes for your classes',
-                              style: TextStyle(
-                                fontSize: 14.sp,
+                              style: AppTextStyles.bodyMedium.copyWith(
                                 color: ColorPalette.textSecondary,
                                 fontWeight: FontWeight.w400,
                               ),
@@ -193,64 +199,56 @@ class _QuickAttendanceScreenState extends State<QuickAttendanceScreen> with Tick
               ),
             ),
 
-            SizedBox(height: 32.h),
+            UIHelpers.verticalSpace(AppConstants.spacing32),
 
             // Scrollable content area
             Expanded(
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: EdgeInsets.symmetric(horizontal: 20.w),
+                padding: EdgeInsets.symmetric(horizontal: AppConstants.spacing20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     // Date selection card
                     Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16.r),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.05),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
+                      decoration: UIHelpers.roundedCardDecoration,
                       child: Material(
                         color: Colors.transparent,
                         child: InkWell(
                           onTap: () => _selectDate(context),
-                          borderRadius: BorderRadius.circular(16.r),
+                          borderRadius: BorderRadius.circular(AppConstants.borderRadius16),
                           child: Padding(
-                            padding: EdgeInsets.all(20.w),
+                            padding: EdgeInsets.all(AppConstants.spacing20),
                             child: Row(
                               children: [
                                 Container(
-                                  padding: EdgeInsets.all(10.w),
+                                  padding: EdgeInsets.all(AppConstants.spacing12),
                                   decoration: BoxDecoration(
                                     color: ColorPalette.darkBlue.withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(12.r),
+                                    borderRadius: BorderRadius.circular(AppConstants.borderRadius12),
                                   ),
-                                  child: Icon(Icons.calendar_today_rounded, color: ColorPalette.darkBlue, size: 20.sp),
+                                  child: Icon(
+                                    Icons.calendar_today_rounded,
+                                    color: ColorPalette.darkBlue,
+                                    size: AppConstants.iconSizeMedium,
+                                  ),
                                 ),
-                                SizedBox(width: 16.w),
+                                UIHelpers.horizontalSpace(AppConstants.spacing16),
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         'Selected Date',
-                                        style: TextStyle(
-                                          fontSize: 12.sp,
+                                        style: AppTextStyles.caption.copyWith(
                                           color: ColorPalette.textSecondary,
                                           fontWeight: FontWeight.w500,
                                         ),
                                       ),
-                                      SizedBox(height: 4.h),
+                                      UIHelpers.verticalSpaceSmall,
                                       Text(
                                         DateFormat('EEEE, MMMM d, yyyy').format(dateState.selectedDate),
-                                        style: TextStyle(
-                                          fontSize: 16.sp,
+                                        style: AppTextStyles.bodyLarge.copyWith(
                                           fontWeight: FontWeight.w600,
                                           color: ColorPalette.textPrimary,
                                         ),
@@ -260,7 +258,11 @@ class _QuickAttendanceScreenState extends State<QuickAttendanceScreen> with Tick
                                     ],
                                   ),
                                 ),
-                                Icon(Icons.chevron_right_rounded, color: ColorPalette.textSecondary, size: 24.sp),
+                                Icon(
+                                  Icons.chevron_right_rounded,
+                                  color: ColorPalette.textSecondary,
+                                  size: AppConstants.iconSizeMedium,
+                                ),
                               ],
                             ),
                           ),
@@ -268,42 +270,35 @@ class _QuickAttendanceScreenState extends State<QuickAttendanceScreen> with Tick
                       ),
                     ),
 
-                    SizedBox(height: 24.h),
+                    UIHelpers.verticalSpace(AppConstants.spacing24),
 
                     // Class selection card
                     Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16.r),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.05),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
+                      decoration: UIHelpers.roundedCardDecoration,
                       child: Padding(
-                        padding: EdgeInsets.all(20.w),
+                        padding: EdgeInsets.all(AppConstants.spacing20),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(
                               children: [
                                 Container(
-                                  padding: EdgeInsets.all(10.w),
+                                  padding: EdgeInsets.all(AppConstants.spacing12),
                                   decoration: BoxDecoration(
                                     color: ColorPalette.darkBlue.withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(12.r),
+                                    borderRadius: BorderRadius.circular(AppConstants.borderRadius12),
                                   ),
-                                  child: Icon(Icons.school_rounded, color: ColorPalette.darkBlue, size: 20.sp),
+                                  child: Icon(
+                                    Icons.school_rounded,
+                                    color: ColorPalette.darkBlue,
+                                    size: AppConstants.iconSizeMedium,
+                                  ),
                                 ),
-                                SizedBox(width: 12.w),
+                                UIHelpers.horizontalSpace(AppConstants.spacing12),
                                 Expanded(
                                   child: Text(
                                     'Select Class Session',
-                                    style: TextStyle(
-                                      fontSize: 16.sp,
+                                    style: AppTextStyles.bodyLarge.copyWith(
                                       fontWeight: FontWeight.w600,
                                       color: ColorPalette.textPrimary,
                                     ),
@@ -313,37 +308,25 @@ class _QuickAttendanceScreenState extends State<QuickAttendanceScreen> with Tick
                                 ),
                               ],
                             ),
-                            SizedBox(height: 16.h),
+                            UIHelpers.verticalSpace(AppConstants.spacing16),
 
                             if (_isLoading)
-                              Center(
-                                child: Padding(
-                                  padding: EdgeInsets.symmetric(vertical: 24.h),
-                                  child: Column(
-                                    children: [
-                                      CircularProgressIndicator(
-                                        valueColor: AlwaysStoppedAnimation<Color>(ColorPalette.darkBlue),
-                                      ),
-                                      SizedBox(height: 16.h),
-                                      Text(
-                                        'Loading classes...',
-                                        style: TextStyle(fontSize: 14.sp, color: ColorPalette.textSecondary),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              )
+                              UIHelpers.loadingIndicatorWithText('Loading classes...')
                             else if (_errorMessage != null)
                               Center(
                                 child: Padding(
-                                  padding: EdgeInsets.symmetric(vertical: 24.h),
+                                  padding: EdgeInsets.symmetric(vertical: AppConstants.spacing24),
                                   child: Column(
                                     children: [
-                                      Icon(Icons.error_outline_rounded, color: Colors.red.shade400, size: 32.sp),
-                                      SizedBox(height: 12.h),
+                                      Icon(
+                                        Icons.error_outline_rounded,
+                                        color: Colors.red.shade400,
+                                        size: AppConstants.iconSizeLarge,
+                                      ),
+                                      UIHelpers.verticalSpace(AppConstants.spacing12),
                                       Text(
                                         _errorMessage!,
-                                        style: TextStyle(fontSize: 14.sp, color: Colors.red.shade600),
+                                        style: AppTextStyles.bodyMedium.copyWith(color: Colors.red.shade600),
                                         textAlign: TextAlign.center,
                                       ),
                                     ],
@@ -353,14 +336,18 @@ class _QuickAttendanceScreenState extends State<QuickAttendanceScreen> with Tick
                             else if (_classes.isEmpty)
                               Center(
                                 child: Padding(
-                                  padding: EdgeInsets.symmetric(vertical: 24.h),
+                                  padding: EdgeInsets.symmetric(vertical: AppConstants.spacing24),
                                   child: Column(
                                     children: [
-                                      Icon(Icons.event_busy_rounded, color: ColorPalette.textSecondary, size: 32.sp),
-                                      SizedBox(height: 12.h),
+                                      Icon(
+                                        Icons.event_busy_rounded,
+                                        color: ColorPalette.textSecondary,
+                                        size: AppConstants.iconSizeLarge,
+                                      ),
+                                      UIHelpers.verticalSpace(AppConstants.spacing12),
                                       Text(
                                         'No classes scheduled for this date',
-                                        style: TextStyle(fontSize: 14.sp, color: ColorPalette.textSecondary),
+                                        style: AppTextStyles.bodyMedium.copyWith(color: ColorPalette.textSecondary),
                                       ),
                                     ],
                                   ),
@@ -375,7 +362,7 @@ class _QuickAttendanceScreenState extends State<QuickAttendanceScreen> with Tick
                                             ? ColorPalette.darkBlue.withValues(alpha: 0.3)
                                             : Colors.grey.shade300,
                                   ),
-                                  borderRadius: BorderRadius.circular(12.r),
+                                  borderRadius: BorderRadius.circular(AppConstants.borderRadius12),
                                 ),
                                 child: DropdownButtonFormField<dynamic>(
                                   value: _selectedClass,
@@ -480,12 +467,12 @@ class _QuickAttendanceScreenState extends State<QuickAttendanceScreen> with Tick
 
                             // Selected class details section
                             if (_selectedClass != null) ...[
-                              SizedBox(height: 16.h),
+                              UIHelpers.verticalSpace(AppConstants.spacing16),
                               Container(
-                                padding: EdgeInsets.all(16.w),
+                                padding: EdgeInsets.all(AppConstants.spacing16),
                                 decoration: BoxDecoration(
                                   color: ColorPalette.darkBlue.withValues(alpha: 0.05),
-                                  borderRadius: BorderRadius.circular(12.r),
+                                  borderRadius: BorderRadius.circular(AppConstants.borderRadius12),
                                   border: Border.all(color: ColorPalette.darkBlue.withValues(alpha: 0.2)),
                                 ),
                                 child: Column(
@@ -493,13 +480,12 @@ class _QuickAttendanceScreenState extends State<QuickAttendanceScreen> with Tick
                                   children: [
                                     Text(
                                       'Selected Class Details',
-                                      style: TextStyle(
-                                        fontSize: 14.sp,
+                                      style: AppTextStyles.bodyMedium.copyWith(
                                         fontWeight: FontWeight.w600,
                                         color: ColorPalette.darkBlue,
                                       ),
                                     ),
-                                    SizedBox(height: 12.h),
+                                    UIHelpers.verticalSpace(AppConstants.spacing12),
                                     Row(
                                       children: [
                                         Icon(Icons.access_time_rounded, size: 16.sp, color: ColorPalette.textSecondary),
@@ -547,7 +533,7 @@ class _QuickAttendanceScreenState extends State<QuickAttendanceScreen> with Tick
                                         ],
                                       ),
                                     ],
-                                    if (_selectedClass['classType'] != null) ...[
+                                    if (_selectedClass['type'] != null) ...[
                                       SizedBox(height: 8.h),
                                       Row(
                                         children: [
@@ -562,7 +548,7 @@ class _QuickAttendanceScreenState extends State<QuickAttendanceScreen> with Tick
                                             ),
                                           ),
                                           Text(
-                                            _selectedClass['classType'],
+                                            _selectedClass['type'],
                                             style: TextStyle(
                                               fontSize: 13.sp,
                                               fontWeight: FontWeight.w600,
@@ -581,14 +567,14 @@ class _QuickAttendanceScreenState extends State<QuickAttendanceScreen> with Tick
                       ),
                     ),
 
-                    SizedBox(height: 24.h),
+                    UIHelpers.verticalSpace(AppConstants.spacing24),
 
                     // Beacon Mode Selection Card
                     if (_selectedClass != null) ...[
                       Container(
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(16.r),
+                          borderRadius: BorderRadius.circular(AppConstants.borderRadius16),
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withValues(alpha: 0.05),
@@ -598,42 +584,44 @@ class _QuickAttendanceScreenState extends State<QuickAttendanceScreen> with Tick
                           ],
                         ),
                         child: Padding(
-                          padding: EdgeInsets.all(20.w),
+                          padding: EdgeInsets.all(AppConstants.spacing20),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
                                 children: [
                                   Container(
-                                    padding: EdgeInsets.all(10.w),
+                                    padding: EdgeInsets.all(AppConstants.spacing12),
                                     decoration: BoxDecoration(
                                       color: ColorPalette.darkBlue.withValues(alpha: 0.1),
-                                      borderRadius: BorderRadius.circular(12.r),
+                                      borderRadius: BorderRadius.circular(AppConstants.borderRadius12),
                                     ),
-                                    child: Icon(Icons.bluetooth_rounded, color: ColorPalette.darkBlue, size: 20.sp),
+                                    child: Icon(
+                                      Icons.bluetooth_rounded,
+                                      color: ColorPalette.darkBlue,
+                                      size: AppConstants.iconSizeMedium,
+                                    ),
                                   ),
-                                  SizedBox(width: 12.w),
+                                  UIHelpers.horizontalSpace(AppConstants.spacing12),
                                   Text(
                                     'Proximity Verification',
-                                    style: TextStyle(
-                                      fontSize: 16.sp,
+                                    style: AppTextStyles.bodyLarge.copyWith(
                                       fontWeight: FontWeight.w600,
                                       color: ColorPalette.textPrimary,
                                     ),
                                   ),
                                 ],
                               ),
-                              SizedBox(height: 16.h),
+                              UIHelpers.verticalSpace(AppConstants.spacing16),
 
                               Text(
                                 'Choose how students will verify their proximity:',
-                                style: TextStyle(
-                                  fontSize: 14.sp,
+                                style: AppTextStyles.bodyMedium.copyWith(
                                   color: ColorPalette.textSecondary,
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
-                              SizedBox(height: 12.h),
+                              UIHelpers.verticalSpace(AppConstants.spacing12),
 
                               // Dedicated Beacon Option
                               Container(
@@ -642,7 +630,7 @@ class _QuickAttendanceScreenState extends State<QuickAttendanceScreen> with Tick
                                     color: _beaconMode == 'dedicated' ? ColorPalette.darkBlue : Colors.grey.shade300,
                                     width: _beaconMode == 'dedicated' ? 2 : 1,
                                   ),
-                                  borderRadius: BorderRadius.circular(12.r),
+                                  borderRadius: BorderRadius.circular(AppConstants.borderRadius12),
                                   color:
                                       _beaconMode == 'dedicated'
                                           ? ColorPalette.darkBlue.withValues(alpha: 0.05)
@@ -652,9 +640,9 @@ class _QuickAttendanceScreenState extends State<QuickAttendanceScreen> with Tick
                                   color: Colors.transparent,
                                   child: InkWell(
                                     onTap: () => setState(() => _beaconMode = 'dedicated'),
-                                    borderRadius: BorderRadius.circular(12.r),
+                                    borderRadius: BorderRadius.circular(AppConstants.borderRadius12),
                                     child: Padding(
-                                      padding: EdgeInsets.all(16.w),
+                                      padding: EdgeInsets.all(AppConstants.spacing16),
                                       child: Row(
                                         children: [
                                           Radio<String>(
@@ -703,7 +691,7 @@ class _QuickAttendanceScreenState extends State<QuickAttendanceScreen> with Tick
                                 ),
                               ),
 
-                              SizedBox(height: 12.h),
+                              UIHelpers.verticalSpace(AppConstants.spacing12),
 
                               // Professor Phone Option
                               Container(
@@ -712,7 +700,7 @@ class _QuickAttendanceScreenState extends State<QuickAttendanceScreen> with Tick
                                     color: _beaconMode == 'phone' ? ColorPalette.darkBlue : Colors.grey.shade300,
                                     width: _beaconMode == 'phone' ? 2 : 1,
                                   ),
-                                  borderRadius: BorderRadius.circular(12.r),
+                                  borderRadius: BorderRadius.circular(AppConstants.borderRadius12),
                                   color:
                                       _beaconMode == 'phone'
                                           ? ColorPalette.darkBlue.withValues(alpha: 0.05)
@@ -722,9 +710,9 @@ class _QuickAttendanceScreenState extends State<QuickAttendanceScreen> with Tick
                                   color: Colors.transparent,
                                   child: InkWell(
                                     onTap: () => setState(() => _beaconMode = 'phone'),
-                                    borderRadius: BorderRadius.circular(12.r),
+                                    borderRadius: BorderRadius.circular(AppConstants.borderRadius12),
                                     child: Padding(
-                                      padding: EdgeInsets.all(16.w),
+                                      padding: EdgeInsets.all(AppConstants.spacing16),
                                       child: Row(
                                         children: [
                                           Radio<String>(
@@ -832,7 +820,7 @@ class _QuickAttendanceScreenState extends State<QuickAttendanceScreen> with Tick
                     ],
 
                     // Extra bottom padding for better scrolling
-                    SizedBox(height: 40.h),
+                    UIHelpers.verticalSpace(AppConstants.spacing40),
                   ],
                 ),
               ),

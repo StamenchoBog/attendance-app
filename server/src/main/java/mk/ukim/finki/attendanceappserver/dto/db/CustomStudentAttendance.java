@@ -1,35 +1,43 @@
 package mk.ukim.finki.attendanceappserver.dto.db;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
+import lombok.Builder;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.LocalDateTime;
 
 @Data
-@JsonInclude(JsonInclude.Include.NON_NULL)
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class CustomStudentAttendance {
 
     private String studentAttendanceId;
     private String studentIndex;
-    private String studentName;
-    private String studyProgramCode;
-    // Professor information
-    private String professorId;
-    private String professorName;
-    // Class Session information
     private String professorClassSessionId;
     private String scheduledClassSessionId;
-    // Course information
+    private LocalDateTime studentArrivalTime;
+
+    // Joined student information
+    private String studentName;
+    private String studyProgramCode;
+
+    // Joined professor information
+    private String professorId;
+    private String professorName;
+
+    // Joined course/class information
     private String courseId;
     private LocalDate classDate;
     private String classType;
     private String classRoomName;
-    // Class session information
     private LocalTime classStartTime;
     private LocalTime classEndTime;
-    // Arrival time information
     private LocalDateTime professorArrivalTime;
-    private LocalDateTime studentArrivalTime;
+
+    // Status field
+    private String status;
 }

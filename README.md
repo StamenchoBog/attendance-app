@@ -1,19 +1,100 @@
-# FINKI Attendance Application
+# Attendance Application
 
-This repository contains the source code for the FINKI Attendance Application, a comprehensive system for tracking student attendance using a mobile app and a backend server.
+A modern, cross-platform mobile solution for tracking student attendance at university, replacing manual sign-in sheets with a secure system using QR
+codes and Bluetooth proximity verification.
 
-## Project Structure
+## 📋 Table of Contents
 
-The project is divided into three main components:
+- [System Overview](#system-overview)
+- [Project Structure](#project-structure)
+- [Quick Start](#quick-start)
+- [Component Documentation](#component-documentation)
+- [Architecture](#architecture)
+- [Academic Presentation](#academic-presentation)
 
-- **/mobile/attendance_app**: A cross-platform mobile application built with Flutter for students and professors. See the [Mobile App README](./mobile/attendance_app/README.md) for more details.
-- **/server**: A backend API server built with Spring Boot that manages all data and business logic. See the [Server README](./server/README.md) for more details.
-- **/blt-beacon**: A component for Bluetooth LE (BLE) beacon broadcasting for proximity verification. See the [Beacon README](./blt-beacon/README.md) for more details.
+## 🔍 System Overview
 
-## Technical Overview
+The system consists of three main components:
 
-For a detailed technical breakdown of the project's architecture, features, and technologies, please see the [**PRESENTATION_README.md**](./PRESENTATION_README.md).
+- **Mobile App (Flutter)**: Cross-platform app for students and professors
+- **Backend API (Spring Boot)**: RESTful API with PostgreSQL database
+- **BLE Beacon**: Bluetooth Low Energy beacon for proximity verification
 
-## Getting Started
+## 📁 Project Structure
 
-To get started with development, please refer to the README file within each component's directory for specific setup and running instructions.
+```
+attendance-app/
+├── mobile/attendance_app/    # Flutter mobile application
+├── server/                   # Spring Boot backend API
+├── blt-beacon/              # Bluetooth LE beacon component
+├── mockups/                 # UI wireframes and design assets
+├── PRESENTATION_README.md   # Academic presentation guide
+└── README.md               # This file
+```
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- **Flutter SDK** 3.x
+- **Java JDK** 21+
+- **Docker & Docker Compose**
+- **Python** 3.7+ (for BLE beacon)
+
+### 1. Start the Backend
+
+```bash
+cd server
+./gradlew bootRun --args='--spring.profiles.active=dev'
+```
+
+### 2. Run Mobile App
+
+```bash
+cd mobile/attendance_app
+flutter pub get
+flutter run
+```
+
+### 3. Setup BLE Beacon (Optional)
+
+```bash
+cd ble-beacon
+pip install -r requirements.txt
+python beacon.py
+```
+
+## 📚 Component Documentation
+
+Each component has its own detailed README with specific setup instructions, dependencies, and development guidelines:
+
+- **[Mobile App](./mobile/attendance_app/README.md)** - Flutter development setup, state management, and features
+- **[Backend API](./server/README.md)** - Spring Boot configuration, database setup, and API documentation
+- **[BLE Beacon](ble-beacon/python/README.md)** - Hardware setup, beacon configuration, and proximity verification
+
+## 🏗 Architecture
+
+### System Flow
+
+1. **Professor** generates QR code for their class
+2. **Student** scans QR code with mobile app
+3. **Backend** validates QR token and creates pending attendance
+4. **Mobile app** scans for BLE beacon to verify proximity
+5. **Backend** confirms attendance based on proximity data
+
+### Security Features
+
+- Time-limited QR tokens (15 minutes)
+- Bluetooth proximity verification
+- Device fingerprinting and linking
+- Automated suspicious activity detection
+- Role-based access control
+
+## 📚 Academic Presentation
+
+For a detailed technical presentation suitable for academic review, including system architecture diagrams, implementation details, and feature
+deep-dives, see **[PRESENTATION_README.md](./PRESENTATION_README.md)**.
+
+## 📄 License
+
+This project is developed for academic purposes at FINKI, University Ss. Cyril and Methodius.

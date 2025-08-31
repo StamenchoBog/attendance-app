@@ -2,19 +2,17 @@ import '../models/student.dart';
 import '../models/professor.dart';
 
 class MockUsers {
-  // Mock student data - using real FINKI naming patterns
   static Student getMockStudent() {
     return const Student(
-      studentIndex: "161123", // Primary test student with realistic name
+      studentIndex: "161123",
       email: "stefan.nikolovski@students.finki.ukim.mk",
       lastName: "Николовски",
       firstName: "Стефан",
       parentName: "Александар",
-      studyProgramCode: "KN23", // Computer Science
+      studyProgramCode: "KN23",
     );
   }
 
-  // Mock professor data - using real FINKI professor
   static Professor getMockProfessor() {
     return const Professor(
       id: "sasho.gramatikov",
@@ -26,7 +24,6 @@ class MockUsers {
     );
   }
 
-  // Alternative test students with real names
   static List<Student> getAlternativeTestStudents() {
     return [
       const Student(
@@ -35,7 +32,7 @@ class MockUsers {
         lastName: "Петровска",
         firstName: "Ана",
         parentName: "Марко",
-        studyProgramCode: "SIIS23", // Software Engineering
+        studyProgramCode: "SIIS23",
       ),
       const Student(
         studentIndex: "163123",
@@ -43,12 +40,11 @@ class MockUsers {
         lastName: "Стојанов",
         firstName: "Марко",
         parentName: "Петар",
-        studyProgramCode: "KI23", // Computer Engineering
+        studyProgramCode: "KI23",
       ),
     ];
   }
 
-  // Real FINKI professors for comprehensive testing
   static List<Professor> getAlternativeTestProfessors() {
     return [
       const Professor(
@@ -74,7 +70,7 @@ class MockUsers {
         title: "PROFESSOR",
         orderingRank: 45,
         officeName: "223",
-      )
+      ),
     ];
   }
 }

@@ -2,9 +2,10 @@ import 'package:attendance_app/data/models/professor.dart';
 import 'package:attendance_app/data/models/student.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:attendance_app/core/theme/color_palette.dart';
+import 'package:attendance_app/core/theme/app_text_styles.dart';
+import 'package:attendance_app/core/utils/ui_helpers.dart';
+import 'package:attendance_app/core/constants/app_constants.dart';
 import 'package:provider/provider.dart';
 import 'package:attendance_app/data/providers/user_provider.dart';
 
@@ -52,46 +53,45 @@ class ProfileHeaderWidget extends StatelessWidget {
         return Center(
           child: Column(
             children: [
-              SizedBox(height: 20.h),
+              UIHelpers.verticalSpace(AppConstants.spacing20),
               CircleAvatar(
-                radius: 55.r,
+                radius: AppConstants.spacing64,
                 backgroundColor: ColorPalette.lightestBlue,
                 child:
                     imageUrl == null || imageUrl!.isEmpty
                         ? Text(
                           initials,
-                          style: TextStyle(
-                            fontSize: 40.sp,
+                          style: AppTextStyles.heading1.copyWith(
                             fontWeight: FontWeight.bold,
-                            color: ColorPalette.darkBlue.withOpacity(0.8),
+                            color: ColorPalette.darkBlue.withValues(alpha: 0.8),
                           ),
                         )
                         : ClipOval(
                           child: CachedNetworkImage(
                             imageUrl: imageUrl!,
                             fit: BoxFit.cover,
-                            width: 110.r,
-                            height: 110.r,
-                            placeholder: (context, url) => const CircularProgressIndicator(),
+                            width: AppConstants.spacing64 * 2,
+                            height: AppConstants.spacing64 * 2,
+                            placeholder:
+                                (context, url) => const CircularProgressIndicator(color: ColorPalette.darkBlue),
                             errorWidget:
                                 (context, url, error) => Text(
                                   initials,
-                                  style: TextStyle(
-                                    fontSize: 40.sp,
+                                  style: AppTextStyles.heading1.copyWith(
                                     fontWeight: FontWeight.bold,
-                                    color: ColorPalette.darkBlue.withOpacity(0.8),
+                                    color: ColorPalette.darkBlue.withValues(alpha: 0.8),
                                   ),
                                 ),
                           ),
                         ),
               ),
-              SizedBox(height: 15.h),
+              UIHelpers.verticalSpace(AppConstants.spacing16),
               Text(
                 displayName,
-                style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold, color: ColorPalette.textPrimary),
+                style: AppTextStyles.heading3.copyWith(fontWeight: FontWeight.bold, color: ColorPalette.textPrimary),
               ),
-              SizedBox(height: 5.h),
-              Text(displayId, style: TextStyle(fontSize: 14.sp, color: ColorPalette.textSecondary)),
+              UIHelpers.verticalSpace(AppConstants.spacing4),
+              Text(displayId, style: AppTextStyles.bodyMedium.copyWith(color: ColorPalette.textSecondary)),
             ],
           ),
         );

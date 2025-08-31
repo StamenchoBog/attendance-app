@@ -2,15 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:attendance_app/core/theme/color_palette.dart';
+import 'package:attendance_app/core/theme/app_text_styles.dart';
+import 'package:attendance_app/core/utils/ui_helpers.dart';
+import 'package:attendance_app/core/constants/app_constants.dart';
 import 'package:attendance_app/core/utils/notification_helper.dart';
 import 'package:attendance_app/data/repositories/report_repository.dart';
 import 'package:attendance_app/data/services/service_starter.dart';
-import 'package:package_info_plus/package_info_plus.dart';
-import 'package:device_info_plus/device_info_plus.dart';
-import 'dart:io';
+import 'package:attendance_app/core/services/device_identifier_service.dart';
 
 // Widgets
 import 'package:attendance_app/presentation/widgets/specific/profile_header_widget.dart';
+import 'package:attendance_app/data/models/report_enums.dart';
+import 'package:provider/provider.dart';
+import 'package:attendance_app/data/providers/user_provider.dart';
 
 class ReportProblemScreen extends StatefulWidget {
   const ReportProblemScreen({super.key});
@@ -66,38 +70,39 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
     });
 
     try {
-      // 4. Get device and app info
-      final packageInfo = await PackageInfo.fromPlatform();
-      final deviceInfo = DeviceInfoPlugin();
-      String deviceInfoString = 'Unknown Device';
+      final reportRepository = locator<ReportRepository>();
+      final user = Provider.of<UserProvider>(context, listen: false).currentUser;
 
-      if (Platform.isAndroid) {
-        final androidInfo = await deviceInfo.androidInfo;
-        deviceInfoString = '${androidInfo.brand} ${androidInfo.model} (Android ${androidInfo.version.release})';
-      } else if (Platform.isIOS) {
-        final iosInfo = await deviceInfo.iosInfo;
-        deviceInfoString = '${iosInfo.name} ${iosInfo.model} (iOS ${iosInfo.systemVersion})';
+      // Get student index from current user
+      if (user?.id == null) {
+        throw Exception('User information not available');
       }
 
-      // 5. Submit report using repository
-      final reportRepository = locator<ReportRepository>();
+      // Get device ID from registered device
+      final deviceIdentifierService = DeviceIdentifierService();
+      final registeredDevice = await deviceIdentifierService.getRegisteredDevice(user!.id);
+      final deviceId = registeredDevice['id']; // This will be null if no device is registered
+
+      // 5. Submit report using repository with foreign keys
       final reportId = await reportRepository.submitReport(
-        reportType: _selectedCategory!,
-        priority: 'medium',
-        // Default priority
         title: _titleController.text.trim(),
         description: _descriptionController.text.trim(),
-        deviceInfo: deviceInfoString,
-        userInfo: 'App Version: ${packageInfo.version} (${packageInfo.buildNumber})',
+        reportType: _mapCategoryToReportType(_selectedCategory!),
+        priority: ReportPriority.medium,
+        // Default to medium priority for user reports
+        studentIndex: user.id,
+        // Required foreign key
+        deviceId: deviceId, // Optional foreign key
       );
 
-      if (mounted) {
-        // Success notification - this will be expandable due to the length
-        NotificationHelper.showSuccess(
+      if (mounted && reportId != null) {
+        // Success notification with copy functionality for report ID
+        NotificationHelper.showSuccessWithCopy(
           context,
           'Your report has been successfully submitted! Thank you for helping us improve the app. Your report ID is: $reportId. We will review your submission and get back to you if additional information is needed. You can reference this ID when contacting support.',
           duration: const Duration(seconds: 6),
-          expandable: true,
+          copyableText: reportId,
+          copyLabel: 'Copy Report ID',
         );
 
         // Clear form and navigate back
@@ -108,6 +113,15 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
         });
 
         // Wait a bit before popping
+        await Future.delayed(const Duration(seconds: 2));
+        if (mounted) Navigator.of(context).pop();
+      } else if (mounted) {
+        // Handle case where reportId is null
+        NotificationHelper.showError(
+          context,
+          'Your report was submitted but we could not generate a report ID. Please contact support if you need to reference this submission.',
+          duration: const Duration(seconds: 5),
+        );
         await Future.delayed(const Duration(seconds: 2));
         if (mounted) Navigator.of(context).pop();
       }
@@ -131,64 +145,86 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
     }
   }
 
+  ReportType _mapCategoryToReportType(String category) {
+    switch (category) {
+      case 'QR Scan Issue':
+      case 'Schedule Error':
+      case 'Login/Account Problem':
+        return ReportType.attendanceIssue;
+      case 'App Bug/Crash':
+        return ReportType.bug;
+      case 'Feature Request':
+        return ReportType.featureRequest;
+      case 'Other':
+      default:
+        return ReportType.other;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: ColorPalette.pureWhite,
       appBar: AppBar(
         title: Text(
-          'Report a Problem', // Specific title
-          style: TextStyle(color: ColorPalette.textPrimary, fontWeight: FontWeight.w600, fontSize: 18.sp),
+          'Report a Problem',
+          style: AppTextStyles.heading3.copyWith(color: ColorPalette.textPrimary, fontWeight: FontWeight.w600),
         ),
         centerTitle: true,
-        backgroundColor: Colors.white,
+        backgroundColor: ColorPalette.pureWhite,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(CupertinoIcons.back, color: ColorPalette.textPrimary),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        iconTheme: IconThemeData(color: ColorPalette.textPrimary),
+        iconTheme: const IconThemeData(color: ColorPalette.textPrimary),
         automaticallyImplyLeading: true,
       ),
       body: SingleChildScrollView(
-        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
+        padding: EdgeInsets.symmetric(horizontal: AppConstants.spacing20, vertical: AppConstants.spacing12),
         child: Form(
           key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Center(child: ProfileHeaderWidget()),
-              // SizedBox(height: 30.h),
 
               // "Report a problem" Section Header
               Padding(
-                padding: EdgeInsets.only(bottom: 15.h, top: 10.h), // Adjusted padding
+                padding: EdgeInsets.only(bottom: AppConstants.spacing16, top: AppConstants.spacing12),
                 child: Row(
                   children: [
-                    Text('Report a problem', style: TextStyle(fontSize: 15.sp, color: ColorPalette.textPrimary)),
+                    Text('Report a problem', style: AppTextStyles.bodyLarge.copyWith(color: ColorPalette.textPrimary)),
                     const Spacer(),
-                    Icon(CupertinoIcons.chevron_down, size: 20.sp, color: ColorPalette.iconGrey.withValues(alpha: 0.8)),
+                    Icon(
+                      CupertinoIcons.chevron_down,
+                      size: AppConstants.iconSizeMedium,
+                      color: ColorPalette.iconGrey.withValues(alpha: 0.8),
+                    ),
                   ],
                 ),
               ),
 
-              Divider(height: 1.h, color: Colors.grey[200]),
+              Divider(height: 1.h, color: ColorPalette.dividerColor),
 
-              SizedBox(height: 15.h),
+              UIHelpers.verticalSpace(AppConstants.spacing16),
 
               // --- Category Dropdown ---
               Text(
                 'Category',
-                style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w500, color: ColorPalette.textPrimary),
+                style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w500, color: ColorPalette.textPrimary),
               ),
-              SizedBox(height: 8.h),
+              UIHelpers.verticalSpace(AppConstants.spacing8),
               DropdownButtonFormField<String>(
                 initialValue: _selectedCategory,
                 items:
                     _problemCategories.map((String category) {
                       return DropdownMenuItem<String>(
                         value: category,
-                        child: Text(category, style: TextStyle(fontSize: 14.sp)),
+                        child: Text(
+                          category,
+                          style: AppTextStyles.bodyMedium.copyWith(color: ColorPalette.textPrimary),
+                        ),
                       );
                     }).toList(),
                 onChanged: (String? newValue) {
@@ -198,53 +234,58 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
                 },
                 decoration: InputDecoration(
                   hintText: 'Select category',
-                  hintStyle: TextStyle(fontSize: 14.sp, color: ColorPalette.iconGrey),
+                  hintStyle: AppTextStyles.bodyMedium.copyWith(color: ColorPalette.placeholderGrey),
                   filled: true,
-                  fillColor: Colors.white,
-                  // White background for dropdown
-                  contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+                  fillColor: ColorPalette.pureWhite,
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: AppConstants.spacing16,
+                    vertical: AppConstants.spacing12,
+                  ),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10.r),
+                    borderRadius: BorderRadius.circular(AppConstants.borderRadius12),
                     borderSide: BorderSide(color: ColorPalette.placeholderGrey),
                   ),
                   enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10.r),
+                    borderRadius: BorderRadius.circular(AppConstants.borderRadius12),
                     borderSide: BorderSide(color: ColorPalette.placeholderGrey),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10.r),
+                    borderRadius: BorderRadius.circular(AppConstants.borderRadius12),
                     borderSide: BorderSide(color: ColorPalette.darkBlue, width: 1.5.w),
                   ),
                 ),
                 validator: (value) => value == null ? 'Please select a category' : null,
               ),
 
-              SizedBox(height: 20.h),
+              UIHelpers.verticalSpace(AppConstants.spacing20),
 
               // --- Title Field ---
               Text(
                 'Title',
-                style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w500, color: ColorPalette.textPrimary),
+                style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w500, color: ColorPalette.textPrimary),
               ),
-              SizedBox(height: 8.h),
+              UIHelpers.verticalSpace(AppConstants.spacing8),
               TextFormField(
                 controller: _titleController,
                 decoration: InputDecoration(
                   hintText: 'Enter a brief title for the problem',
-                  hintStyle: TextStyle(fontSize: 14.sp, color: ColorPalette.iconGrey),
+                  hintStyle: AppTextStyles.bodyMedium.copyWith(color: ColorPalette.placeholderGrey),
                   filled: true,
-                  fillColor: Colors.white,
-                  contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+                  fillColor: ColorPalette.pureWhite,
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: AppConstants.spacing16,
+                    vertical: AppConstants.spacing12,
+                  ),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10.r),
+                    borderRadius: BorderRadius.circular(AppConstants.borderRadius12),
                     borderSide: BorderSide(color: ColorPalette.placeholderGrey),
                   ),
                   enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10.r),
+                    borderRadius: BorderRadius.circular(AppConstants.borderRadius12),
                     borderSide: BorderSide(color: ColorPalette.placeholderGrey),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10.r),
+                    borderRadius: BorderRadius.circular(AppConstants.borderRadius12),
                     borderSide: BorderSide(color: ColorPalette.darkBlue, width: 1.5.w),
                   ),
                 ),
@@ -256,32 +297,35 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
                 },
               ),
 
-              SizedBox(height: 20.h),
+              UIHelpers.verticalSpace(AppConstants.spacing20),
 
               // --- Description Field ---
               Text(
                 'Description',
-                style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w500, color: ColorPalette.textPrimary),
+                style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w500, color: ColorPalette.textPrimary),
               ),
-              SizedBox(height: 8.h),
+              UIHelpers.verticalSpace(AppConstants.spacing8),
               TextFormField(
                 controller: _descriptionController,
                 decoration: InputDecoration(
                   hintText: 'Please describe the problem in detail...',
-                  hintStyle: TextStyle(fontSize: 14.sp, color: ColorPalette.iconGrey),
+                  hintStyle: AppTextStyles.bodyMedium.copyWith(color: ColorPalette.placeholderGrey),
                   filled: true,
-                  fillColor: Colors.white,
-                  contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+                  fillColor: ColorPalette.pureWhite,
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: AppConstants.spacing16,
+                    vertical: AppConstants.spacing12,
+                  ),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10.r),
+                    borderRadius: BorderRadius.circular(AppConstants.borderRadius12),
                     borderSide: BorderSide(color: ColorPalette.placeholderGrey),
                   ),
                   enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10.r),
+                    borderRadius: BorderRadius.circular(AppConstants.borderRadius12),
                     borderSide: BorderSide(color: ColorPalette.placeholderGrey),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10.r),
+                    borderRadius: BorderRadius.circular(AppConstants.borderRadius12),
                     borderSide: BorderSide(color: ColorPalette.darkBlue, width: 1.5.w),
                   ),
                 ),
@@ -299,30 +343,29 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
                 },
               ),
 
-              SizedBox(height: 30.h),
+              UIHelpers.verticalSpace(AppConstants.spacing32),
 
               // --- Submit Button ---
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: ColorPalette.darkBlue,
-                  foregroundColor: Colors.white,
-                  minimumSize: Size(double.infinity, 50.h),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
-                  textStyle: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600),
+                  foregroundColor: ColorPalette.pureWhite,
+                  minimumSize: Size(double.infinity, AppConstants.buttonHeight),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppConstants.borderRadius12)),
+                  textStyle: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.w600),
                 ),
                 onPressed: _isSubmitting ? null : _submitReport,
                 child:
                     _isSubmitting
                         ? SizedBox(
-                          // Show progress indicator when submitting
-                          width: 20.w,
-                          height: 20.w,
-                          child: const CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          width: AppConstants.iconSizeMedium,
+                          height: AppConstants.iconSizeMedium,
+                          child: const CircularProgressIndicator(strokeWidth: 2, color: ColorPalette.pureWhite),
                         )
                         : const Text('Submit Report'),
               ),
 
-              SizedBox(height: 20.h),
+              UIHelpers.verticalSpace(AppConstants.spacing20),
             ],
           ),
         ),

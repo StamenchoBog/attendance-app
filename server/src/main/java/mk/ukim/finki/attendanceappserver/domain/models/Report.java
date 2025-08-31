@@ -36,11 +36,11 @@ public class Report {
     @Column("steps_to_reproduce")
     private String stepsToReproduce;
 
-    @Column("user_info")
-    private String userInfo;
+    @Column("student_index")
+    private String studentIndex;
 
-    @Column("device_info")
-    private String deviceInfo;
+    @Column("device_id")
+    private String deviceId;
 
     @Column("status")
     private ReportStatus status;

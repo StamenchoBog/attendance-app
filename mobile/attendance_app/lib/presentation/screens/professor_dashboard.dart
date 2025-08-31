@@ -1,9 +1,11 @@
 import 'package:attendance_app/data/providers/date_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 import 'package:attendance_app/core/theme/color_palette.dart';
+import 'package:attendance_app/core/theme/app_text_styles.dart';
+import 'package:attendance_app/core/utils/ui_helpers.dart';
+import 'package:attendance_app/core/constants/app_constants.dart';
 import 'package:provider/provider.dart';
 
 // Widgets
@@ -12,7 +14,7 @@ import 'package:attendance_app/presentation/widgets/static/bottom_nav_bar.dart';
 import 'package:attendance_app/presentation/widgets/specific/main_dashboard_widgets.dart';
 import 'package:attendance_app/presentation/screens/professor_class_details_screen.dart';
 import 'package:attendance_app/presentation/widgets/static/helpers/navigation_helpers.dart';
-import 'package:attendance_app/core/utils/page_transitions.dart';
+import 'package:attendance_app/presentation/widgets/static/modern_dropdown.dart';
 import 'package:logger/logger.dart';
 
 import '../../data/models/professor.dart';
@@ -46,10 +48,19 @@ class _ProfessorDashboardState extends State<ProfessorDashboard> {
   String? _errorMessage;
 
   String _searchQuery = '';
-  List<Subject> _subjects = [];
-  List<Room> _rooms = [];
+  List<Subject> _availableSubjects = [];
+  List<Map<String, dynamic>> _availableRooms = [];
   Subject? _selectedSubject;
-  Room? _selectedRoom;
+  Map<String, dynamic>? _selectedRoom;
+
+  @override
+  void initState() {
+    super.initState();
+    // Load data immediately when the widget is first created
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadInitialData();
+    });
+  }
 
   @override
   void didChangeDependencies() {
@@ -59,8 +70,8 @@ class _ProfessorDashboardState extends State<ProfessorDashboard> {
       _dateProvider?.removeListener(_loadInitialData);
       _dateProvider = provider;
       _dateProvider?.addListener(_loadInitialData);
-      // Initial load
-      _loadInitialData();
+      // Load data when DateProvider changes (for date selection changes)
+      // The initial load is already handled in initState
     }
   }
 
@@ -75,6 +86,8 @@ class _ProfessorDashboardState extends State<ProfessorDashboard> {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
+      _selectedSubject = null; // Reset filters when date changes
+      _selectedRoom = null;
     });
 
     try {
@@ -82,19 +95,66 @@ class _ProfessorDashboardState extends State<ProfessorDashboard> {
       if (user == null) {
         throw Exception("Professor not logged in");
       }
-      final subjects = await _subjectRepository.getSubjectsByProfessorId(user.id);
-      final rooms = await _roomRepository.getRooms();
-      final classes = await _classSessionRepository.getProfessorClassSessions(user.id, _dateProvider!.selectedDate);
+
+      // Use date-based endpoint to get classes for the selected date
+      final selectedDate = _dateProvider?.selectedDate ?? DateTime.now();
+      final classes = await _classSessionRepository.getProfessorClassSessionsByDate(
+        professorId: user.id,
+        date: selectedDate,
+        context: context,
+      );
+
+      // Extract unique subjects and rooms from the actual classes for this date
+      final Set<String> subjectIds = {};
+      final Set<String> roomNames = {};
+
+      for (final classData in classes ?? []) {
+        if (classData['subjectId'] != null) {
+          subjectIds.add(classData['subjectId'].toString());
+        }
+        if (classData['roomName'] != null) {
+          roomNames.add(classData['roomName'].toString());
+        }
+      }
+
+      // Get all subjects and rooms
+      final allSubjects = await _subjectRepository.getSubjectsByProfessorId(user.id);
+      final allRooms = await _roomRepository.getAllRooms();
+
+      // Debug logging
+      _logger.d('Classes for date: ${classes?.length ?? 0}');
+      _logger.d('Subject IDs from classes: $subjectIds');
+      _logger.d('Room names from classes: $roomNames');
+      _logger.d('All subjects count: ${allSubjects?.length ?? 0}');
+      _logger.d('All rooms count: ${allRooms?.length ?? 0}');
+
+      // For subjects: Show all subjects the professor teaches (not just today's)
+      // This ensures the filter always has options
+      final availableSubjects = allSubjects ?? [];
+
+      // For rooms: Only show rooms that have classes today (more restrictive)
+      final availableRooms = (allRooms ?? []).where((room) => roomNames.contains(room['name'])).toList();
+
+      // Debug the filtered results
+      _logger.d('Available subjects after filtering: ${availableSubjects.length}');
+      _logger.d('Available rooms after filtering: ${availableRooms.length}');
+      if (availableSubjects.isNotEmpty) {
+        _logger.d('Subject names: ${availableSubjects.map((s) => s.name).toList()}');
+      }
+      if (availableRooms.isNotEmpty) {
+        _logger.d('Room names: ${availableRooms.map((r) => r['name']).toList()}');
+      }
 
       if (!mounted) return;
       setState(() {
-        _subjects = subjects.toSet().toList();
-        _rooms = rooms;
-        _allClasses = classes;
-        _filteredClasses = classes;
+        _availableSubjects = availableSubjects;
+        _availableRooms = availableRooms;
+        _allClasses = classes ?? [];
+        _filteredClasses = classes ?? [];
         _isLoading = false;
-        _filterClasses();
       });
+
+      _filterClasses();
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -106,15 +166,21 @@ class _ProfessorDashboardState extends State<ProfessorDashboard> {
   }
 
   void _filterClasses() {
+    _logger.d(
+      'Filtering classes - Selected Subject: ${_selectedSubject?.name}, Selected Room: ${_selectedRoom?['name']}',
+    );
+
     List<dynamic> filtered = _allClasses;
 
     // Filter by dropdowns first
     if (_selectedSubject != null) {
-      filtered = filtered.where((c) => c['subjectId'] == _selectedSubject!.id).toList();
+      filtered = filtered.where((c) => c['subjectId'].toString() == _selectedSubject!.id).toList();
+      _logger.d('After subject filter: ${filtered.length} classes');
     }
 
     if (_selectedRoom != null) {
-      filtered = filtered.where((c) => c['roomName'] == _selectedRoom!.name).toList();
+      filtered = filtered.where((c) => c['roomName'] == _selectedRoom!['name']).toList();
+      _logger.d('After room filter: ${filtered.length} classes');
     }
 
     // Then filter by search query
@@ -126,8 +192,10 @@ class _ProfessorDashboardState extends State<ProfessorDashboard> {
             final roomName = (classData['roomName'] as String? ?? '').toLowerCase();
             return subjectName.contains(lowerCaseQuery) || roomName.contains(lowerCaseQuery);
           }).toList();
+      _logger.d('After search filter: ${filtered.length} classes');
     }
 
+    _logger.d('Final filtered classes count: ${filtered.length}');
     setState(() {
       _filteredClasses = filtered;
     });
@@ -163,11 +231,11 @@ class _ProfessorDashboardState extends State<ProfessorDashboard> {
       backgroundColor: Colors.white,
       body: SafeArea(
         child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 20.w),
+          padding: EdgeInsets.symmetric(horizontal: AppConstants.spacing20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SizedBox(height: 15.h),
+              UIHelpers.verticalSpace(AppConstants.spacing16),
               AppTopBar(
                 searchHintText: 'Search by subject or room...',
                 onSearchChanged: (value) {
@@ -177,9 +245,9 @@ class _ProfessorDashboardState extends State<ProfessorDashboard> {
                   });
                 },
               ),
-              SizedBox(height: 15.h),
+              UIHelpers.verticalSpace(AppConstants.spacing16),
               buildProfessorInfoCard(context),
-              SizedBox(height: 15.h),
+              UIHelpers.verticalSpace(AppConstants.spacing16),
               Row(
                 children: [
                   buildDateTimeChip(
@@ -190,53 +258,47 @@ class _ProfessorDashboardState extends State<ProfessorDashboard> {
                   const Spacer(),
                 ],
               ),
-              SizedBox(height: 10.h),
+              UIHelpers.verticalSpace(AppConstants.spacing12),
               Row(
                 children: [
                   Expanded(
-                    child: DropdownButton<Subject>(
-                      isExpanded: true,
+                    child: ModernDropdown<Subject>(
                       value: _selectedSubject,
-                      hint: const Text("Filter by Subject"),
+                      hint: "Filter by Subject",
+                      items: _availableSubjects,
+                      getDisplayText: (subject) => subject.name,
                       onChanged: (Subject? newValue) {
+                        print('Subject filter changed to: ${newValue?.name ?? "null"}');
                         setState(() {
                           _selectedSubject = newValue;
                         });
                         _filterClasses();
                       },
-                      items:
-                          _subjects.map<DropdownMenuItem<Subject>>((Subject subject) {
-                            return DropdownMenuItem<Subject>(
-                              value: subject,
-                              child: Text(subject.name, overflow: TextOverflow.ellipsis),
-                            );
-                          }).toList(),
+                      isLoading: _isLoading,
+                      prefixIcon: CupertinoIcons.book,
                     ),
                   ),
-                  SizedBox(width: 10.w),
+                  UIHelpers.horizontalSpace(AppConstants.spacing12),
                   Expanded(
-                    child: DropdownButton<Room>(
-                      isExpanded: true,
+                    child: ModernDropdown<Map<String, dynamic>>(
                       value: _selectedRoom,
-                      hint: const Text("Filter by Room"),
-                      onChanged: (Room? newValue) {
+                      hint: "Filter by Room",
+                      items: _availableRooms,
+                      getDisplayText: (room) => room['name'],
+                      // Adjusted to match the repository return type
+                      onChanged: (Map<String, dynamic>? newValue) {
                         setState(() {
                           _selectedRoom = newValue;
                         });
                         _filterClasses();
                       },
-                      items:
-                          _rooms.map<DropdownMenuItem<Room>>((Room room) {
-                            return DropdownMenuItem<Room>(
-                              value: room,
-                              child: Text(room.name, overflow: TextOverflow.ellipsis),
-                            );
-                          }).toList(),
+                      isLoading: _isLoading,
+                      prefixIcon: CupertinoIcons.location,
                     ),
                   ),
                 ],
               ),
-              SizedBox(height: 10.h),
+              UIHelpers.verticalSpace(AppConstants.spacing12),
               Expanded(
                 child:
                     _isLoading
@@ -246,14 +308,18 @@ class _ProfessorDashboardState extends State<ProfessorDashboard> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(CupertinoIcons.exclamationmark_triangle, size: 50.sp, color: ColorPalette.iconGrey),
-                              SizedBox(height: 16.h),
+                              Icon(
+                                CupertinoIcons.exclamationmark_triangle,
+                                size: AppConstants.iconSizeXLarge,
+                                color: ColorPalette.iconGrey,
+                              ),
+                              UIHelpers.verticalSpaceMedium,
                               Text(
                                 _errorMessage!,
-                                style: TextStyle(fontSize: 14.sp, color: ColorPalette.textSecondary),
+                                style: AppTextStyles.bodyMedium.copyWith(color: ColorPalette.textSecondary),
                                 textAlign: TextAlign.center,
                               ),
-                              SizedBox(height: 16.h),
+                              UIHelpers.verticalSpaceMedium,
                               ElevatedButton(onPressed: _loadInitialData, child: const Text('Retry')),
                             ],
                           ),
@@ -263,13 +329,17 @@ class _ProfessorDashboardState extends State<ProfessorDashboard> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(CupertinoIcons.search_circle, size: 50.sp, color: ColorPalette.iconGrey),
-                              SizedBox(height: 16.h),
+                              Icon(
+                                CupertinoIcons.search_circle,
+                                size: AppConstants.iconSizeXLarge,
+                                color: ColorPalette.iconGrey,
+                              ),
+                              UIHelpers.verticalSpaceMedium,
                               Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 20.w),
+                                padding: EdgeInsets.symmetric(horizontal: AppConstants.spacing20),
                                 child: Text(
                                   'No classes found for the selected criteria.',
-                                  style: TextStyle(fontSize: 14.sp, color: ColorPalette.textSecondary),
+                                  style: AppTextStyles.bodyMedium.copyWith(color: ColorPalette.textSecondary),
                                   textAlign: TextAlign.center,
                                 ),
                               ),
@@ -311,7 +381,7 @@ class _ProfessorDashboardState extends State<ProfessorDashboard> {
 
                             return GestureDetector(
                               onTap: () {
-                                context.pushSlide(ProfessorClassDetailsScreen(classData: classData));
+                                fastPush(context, ProfessorClassDetailsScreen(classData: classData));
                               },
                               child: buildClassListItem(
                                 classData['subjectName'] ?? 'N/A',
