@@ -120,7 +120,6 @@ Some pictures are listed below, more of them can be viewed [here](./mockups/demo
     <img src="./mockups/demo/student_calendar_overview.jpg" width="200"/>
     <img src="./mockups/demo/student_quick_attendance_verification.jpg" width="200"/>
     <img src="./mockups/demo/student_profile.jpg" width="200"/>
-    <img src="./mockups/demo/student_profile_language_change.jpg" width="200"/>
     <img src="mockups/demo/student_profile_device_match.jpg" width="200">
     <img src="mockups/demo/professor_dashboard.jpg" width="200">
     <img src="mockups/demo/professor_course_details_overview.jpg" width="200">
