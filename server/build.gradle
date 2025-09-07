@@ -45,7 +45,7 @@ dependencies {
 	// Feature Dependencies
 	implementation 'com.google.zxing:javase:3.5.3'  // QR Code generation/reading
 	// Swagger documentation
-	implementation 'org.springdoc:springdoc-openapi-starter-webflux-ui:2.8.11'
+	implementation 'org.springdoc:springdoc-openapi-starter-webflux-ui:2.8.13'
 	// Logging
 	implementation 'org.slf4j:slf4j-api:2.0.17'
 	implementation 'ch.qos.logback:logback-classic:1.5.18'
