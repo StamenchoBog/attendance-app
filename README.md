@@ -3,19 +3,19 @@
 A modern, secure mobile attendance system for universities that combines QR code scanning with Bluetooth proximity verification to prevent attendance
 fraud and streamline classroom management.
 
-## 🎯 Overview
+## Overview
 
 This system replaces traditional paper-based attendance with a three-component solution:
 
-- **📱 Flutter Mobile App**: Cross-platform interface for students and professors
-- **🖥️ Spring Boot API**: Reactive backend with PostgreSQL database
-- **📡 Arduino BLE Beacons**: Classroom proximity verification devices
+- **Flutter Mobile App**: Cross-platform interface for students and professors
+- **Spring Boot API**: Reactive backend with PostgreSQL database
+- **Arduino BLE Beacons**: Classroom proximity verification devices
 
 ### Key Innovation
 
 **Dual-layer security**: QR codes for session identification + Bluetooth proximity verification to ensure physical presence in the classroom.
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
@@ -51,7 +51,7 @@ cd mobile/attendance_app && flutter pub get && flutter run
 # Flash Arduino UNO R4 WiFi with ble-beacon/arduino/beacon.ino
 ```
 
-## 🔧 Project Structure
+## Project Structure
 
 ```
 attendance-app/
@@ -62,7 +62,7 @@ attendance-app/
 └── mockups/                  # UI/UX design assets
 ```
 
-## 🛡️ Security Features
+## Security Features
 
 - **Time-Limited QR Codes**: 15-minute expiration prevents sharing
 - **Proximity Verification**: Bluetooth RSSI distance calculation (≤5m)
@@ -70,34 +70,11 @@ attendance-app/
 - **Automated Fraud Detection**: ML-based pattern analysis
 - **Two-Phase Verification**: Registration + proximity confirmation
 
-## 🎓 Academic Use Case
+## Documentation
 
-**Problem**: Traditional attendance methods are prone to fraud (proxy attendance, buddy system)
-
-**Solution**: Cryptographically secure tokens + physical proximity verification
-
-**Result**: 95%+ fraud reduction while maintaining sub-30-second attendance registration
-
-## 📖 Documentation
-
-- **[📱 Mobile App Guide](./mobile/attendance_app/README.md)** - Development setup and features
-- **[🖥️ Backend API Docs](./server/README.md)** - Server configuration and endpoints
-- **[📡 Beacon Setup](./ble-beacon/arduino/README.md)** - Hardware deployment guide
-- **[🎯 Technical Deep-Dive](./PRESENTATION_README.md)** - Architecture and implementation details
-
-## 🚀 Deployment
-
-### Production Environment
-
-- **Mobile**: Android APK + iOS IPA distribution
-- **Backend**: Docker containerization with PostgreSQL
-- **Beacons**: Per-classroom Arduino deployment (~$30/room)
-
-### Scalability Targets
-
-- 1,000+ concurrent users
-- 50,000+ daily attendance records
-- 200+ classroom beacon network
+- **[Mobile App Guide](./mobile/attendance_app/README.md)** - Development setup and features
+- **[Backend API Docs](./server/README.md)** - Server configuration and endpoints
+- **[Beacon Setup](./ble-beacon/arduino/README.md)** - Hardware deployment guide
 
 ## 📊 Tech Stack
 
@@ -106,7 +83,7 @@ attendance-app/
 | **Frontend** | Flutter 3, Dart, Provider                  |
 | **Backend**  | Java 21, Spring Boot 5, WebFlux, R2DBC     |
 | **Database** | PostgreSQL, Liquibase migrations           |
-| **Security** | JWT, Device fingerprinting, RSSI proximity |
+| **Security** | Device fingerprinting, RSSI proximity |
 | **IoT**      | Arduino UNO R4 WiFi, Bluetooth LE 5.0      |
 
 ## Application's visual design
@@ -124,8 +101,3 @@ Some pictures are listed below, more of them can be viewed [here](./mockups/demo
     <img src="mockups/demo/professor_dashboard.jpg" width="200">
     <img src="mockups/demo/professor_course_details_overview.jpg" width="200">
 </p>
-
-## 📄 License
-
-Academic project developed for the purpose of a course at **Faculty of Computer Science and Engineering (FINKI)**, University Ss. Cyril and Methodius,
-Skopje.
