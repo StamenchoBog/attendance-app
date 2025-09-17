@@ -31,7 +31,7 @@ This system replaces traditional paper-based attendance with a three-component s
 └─────────────────┘    └─────────────────┘
 ```
 
-## ⚡ Quick Start
+## Quick Start
 
 ### Prerequisites
 
