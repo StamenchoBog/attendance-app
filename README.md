@@ -76,7 +76,7 @@ attendance-app/
 - **[Backend API Docs](./server/README.md)** - Server configuration and endpoints
 - **[Beacon Setup](./ble-beacon/arduino/README.md)** - Hardware deployment guide
 
-## 📊 Tech Stack
+## Tech Stack
 
 | Component    | Technologies                               |
 |--------------|--------------------------------------------|
