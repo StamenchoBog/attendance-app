@@ -33,8 +33,8 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-jdbc:3.5.5'
 	developmentOnly 'org.springframework.boot:spring-boot-devtools:3.5.5'
 	// Lombok (Compile-time only, and annotation processor)
-	compileOnly 'org.projectlombok:lombok:1.18.38'
-	annotationProcessor 'org.projectlombok:lombok:1.18.38'
+	compileOnly 'org.projectlombok:lombok:1.18.42'
+	annotationProcessor 'org.projectlombok:lombok:1.18.42'
 	// R2DBC (Reactive Database Connectivity)
 	implementation 'io.r2dbc:r2dbc-spi:1.0.0.RELEASE'
 	implementation 'org.springframework.data:spring-data-r2dbc:3.5.3'
